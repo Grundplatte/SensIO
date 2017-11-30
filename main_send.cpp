@@ -1,72 +1,103 @@
 #include <iostream>
+#include "spdlog/spdlog.h"
 #include "PacketSystem/PacketManager.h"
 #include "PacketSystem/ECC/Hadamard.h"
 
-typedef uint8_t byte;
+namespace spd = spdlog;
+
+enum State {
+    WAIT_FOR_SQN,
+    CHECK_FOR_SQN,
+    DECODE_SQN,
+    SEND_PACKET,
+    STOP,
+    ERROR
+};
 
 int main() {
-    printf("[I] Sender started ...\n");
+    std::shared_ptr<spd::logger> log;
+    log = spd::stdout_color_mt("main");
+    spd::set_pattern("[%M:%S.%e] [%l] [%n] %v");
 
+    /*** SET DEBUG LEVEL ***/
+    spd::set_level(spd::level::debug);
 
-    byte preamble[4] = "pre";
+    log->info("Sender started. Waiting for Request\n");
+
     byte data[21] = "TESTaTESTbTESTcTESTd";
-
-    //detectUsage();
-    //send(data, 20   );
-
-    // testing
-    //detectUsage();
-
-    byte *packets;
-    uint32_t i;
-    int numPackets;
-    byte sqn, sqnHad, lastseq, cycle;
-
+    byte *packets, sqn, sqnHad;
     int result;
+
     PacketManager *ps = new PacketManager();
     ECC *ecc = new Hadamard();
+    State state = WAIT_FOR_SQN;
 
-    numPackets = ps->create(data, 20, &packets);
+    int packetSqn = -1;
+    int modSqn = ps->getMaxSqn();
+    int numPackets = ps->pack(data, 20, &packets);
+    int bytesPerPacket = ps->calcBytesPerPacket();
 
-    lastseq = 0;
-    cycle = 1;
+
     while(1) {
-        // wait for request
-        do {
-            result = ps->waitForRequest(&sqnHad);
-        }while(result < 0);
-        printf("seqHad: 0x%x\n", sqnHad);
+        switch (state) {
+            case ERROR:
+                log->critical("Error -> exiting.\n");
+                exit(-1);
+                break;
 
-        result = ecc->decode(&sqnHad, 2, &sqn);
+            case WAIT_FOR_SQN:
+                result = ps->waitForRequest(&sqnHad);
 
-        if(result < 0) {
-            //TODO: handle error
-            printf("[D] Sequence number (Hadamard) doesnt make sense: %i\n", sqnHad);
-            continue;
+                if (result == 0)
+                    state = DECODE_SQN;
+
+                break;
+
+            case CHECK_FOR_SQN:
+                result = ps->checkForRequest(&sqnHad);
+
+                if (result == -2)
+                    state = SEND_PACKET;
+                else if (result == 0)
+                    state = DECODE_SQN;
+
+                break;
+
+            case DECODE_SQN:
+                result = ecc->decode(&sqnHad, 8, &sqn);
+
+                if (result < 0)
+                    state = CHECK_FOR_SQN;
+                else if (sqn == (packetSqn - 1) % modSqn) // stop condition
+                    state = STOP;
+                else if (sqn == (packetSqn) % modSqn) {
+                    log->warn("Receiver requested the same packet again.");
+                    state = SEND_PACKET;
+                } else if (sqn == (packetSqn + 1) % modSqn) {
+                    packetSqn++;
+                    state = SEND_PACKET;
+                } else {
+                    log->error("Receiver requested packet out of order!");
+                    state = STOP;
+                }
+
+                // TODO: check sqn flow (newSqn = oldSqn+1)
+                // TODO: calculate real sqn (++)
+                // TODO: transmit next on +1, same sqn shouldnt happen but retransmit,
+                // ignore other sqn a few times, then error/restart depending on sqn
+
+                break;
+
+            case SEND_PACKET:
+                log->info("Sending packet {0}", packetSqn);
+                ps->send(packets + packetSqn * bytesPerPacket);
+                state = CHECK_FOR_SQN;
+                break;
+
+            case STOP:
+                log->info("Stopping.");
+                return (0);
+                break;
         }
-
-
-        if(sqn == lastseq) {
-            printf("[D] Receiver is requesting the same packet again: %i\n", sqn);
-        }
-        else if(sqn != (lastseq+1)%8) {
-            printf("[D] Receiver is requesting a packet out of order: %i \n", sqn);
-        }
-
-        // seq[0...7]
-        if(lastseq > sqn) {
-            cycle++;
-        }
-
-        ps->send(packets, cycle*8 + sqn);
-
-        lastseq = sqn;
     }
-
-    if(packets != 0)
-        free(packets);
-
-    //printf("[D] Sent: 0x%02x 0x%02x 0x%02x 0x%02x = %s\n", data[0], data[1], data[2], data[3], data);
-
-    return(EXIT_SUCCESS);
 }

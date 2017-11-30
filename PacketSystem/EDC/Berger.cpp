@@ -6,17 +6,28 @@
 #include <cstdio>
 #include "Berger.h"
 
-/*
- * Generate Berger code (4bit)
- */
+const int Berger::MAX_CHECK_LENGTH = 4;
+
+Berger::Berger() {
+    std::shared_ptr<spdlog::logger> log;
+    log = spd::get("Berger");
+
+    if (log)
+        m_log = log;
+    else
+        m_log = spd::stdout_color_mt("Berger");
+}
+
+Berger::~Berger() {}
+
 // TODO: support longer codes
-int Berger::generate(byte *input, int length, byte *output) {
+int Berger::generate(byte *input, unsigned int length, byte *output) {
 
     unsigned int i, count, checkBits;
 
-    checkBits = ceil(log2(length + 1));
+    checkBits = calcOutputSize(length);
     if(checkBits > MAX_CHECK_LENGTH) {
-        printf("[E] Berger codes with more than %i bit are not supported!\n", MAX_CHECK_LENGTH);
+        m_log->error("Berger codes with more than {0} bit are not supported!", MAX_CHECK_LENGTH);
         return -1;
     }
 
@@ -31,7 +42,11 @@ int Berger::generate(byte *input, int length, byte *output) {
     return checkBits;
 }
 
-int Berger::check(byte *input, int length) {
+int Berger::check(byte *input, unsigned int length) {
     // TODO: implement
     return 0;
+}
+
+int Berger::calcOutputSize(unsigned int length) {
+    return ceil(log2(length + 1));
 }

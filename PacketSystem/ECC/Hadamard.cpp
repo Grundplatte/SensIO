@@ -4,10 +4,23 @@
 
 #include "Hadamard.h"
 
+Hadamard::Hadamard() {
+    std::shared_ptr<spdlog::logger> log;
+    log = spd::get("Had");
+
+    if (log)
+        m_log = log;
+    else
+        m_log = spd::stdout_color_mt("Had");
+}
+
+Hadamard::~Hadamard() {}
+
 /*
  * Hadamard Code
  * generate 8bit code from 3bit sqn
  */
+
 //uint8_t G = [0b00001111, 0b00110011, 0b01010101]; // Generator matrix for k=3
 // TODO: support variable input length (only 3->8 is supported for now)
 int Hadamard::encode(byte *input, int length, byte *output)
@@ -71,4 +84,10 @@ int Hadamard::calcHamming(byte input1, byte input2)
         }
     }
     return ham;
+}
+
+// TODO: make dynamic
+int Hadamard::getEncodedSize() {
+    return 7;
+
 }
