@@ -8,8 +8,14 @@
 
 class Hadamard : public ECC {
 public:
+    Hadamard();
+
+    ~Hadamard();
+
     int encode(byte *input, int length, byte *output) override;
     int decode(byte *input, int length, byte *output) override;
+
+    int getEncodedSize() override;
 
 private:
     word G = 0b000011110011001101010101; // Generator matrix (as a vector)

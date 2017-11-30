@@ -1,9 +1,24 @@
 #pragma once
 
+#include "../spdlog/spdlog.h"
 #include "../Defines.h"
+
+namespace spd = spdlog;
 
 class Sensor {
 public:
+    /**
+     * Check if the sensor is activated
+     * @return: -1 on error, 0 otherwise
+     **/
+    virtual int isActive() = 0;
+
+    /**
+     * Toggle the sensor on/off
+     * @return: -1 on error, 0 otherwise
+     **/
+    virtual int toggleOnOff(bool onOff) = 0;
+
     /**
      * Wait until the sensor is ready to transmit data
      * @return: -1 on error, 0 otherwise
@@ -28,4 +43,7 @@ public:
      * @return: (-1 on error, 0 otherwise)
      **/
     virtual int sendReset() = 0;
+
+protected:
+    std::shared_ptr<spd::logger> m_log;
 };

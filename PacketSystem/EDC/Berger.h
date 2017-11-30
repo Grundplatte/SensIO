@@ -8,6 +8,10 @@
 
 class Berger: public EDC {
 public:
+    Berger();
+
+    ~Berger();
+
     /*
      * Generate a berger code from the input
      * input: payload
@@ -15,7 +19,7 @@ public:
      * length: input length in byte (TODO: change to bit)
      * return: output length in byte (TODO: change to bit)
      */
-    int generate(byte *input, int length, byte *output) override;
+    int generate(byte *input, unsigned int length, byte *output) override;
 
     /*
      * Validate the payload + berger code
@@ -23,7 +27,10 @@ public:
      * length: input length in byte (TODO: change to bit)
      * return: valid (0) or invalid(-1)
      */
-    int check(byte *input, int length) override;
+    int check(byte *input, unsigned int length) override;
+
+    int calcOutputSize(unsigned int length) override;
+
 private:
-    static const int MAX_CHECK_LENGTH = 4;
+    static const int MAX_CHECK_LENGTH;
 };
