@@ -7,7 +7,14 @@
 #include "EDC.h"
 
 class NoEDC : public EDC {
-    int generate(byte *input, int length, byte *output) override;
+public:
+    NoEDC();
 
-    int check(byte *input, int length) override;
+    ~NoEDC();
+
+    int generate(byte *input, unsigned int length, byte *output) override;
+
+    int check(byte *input, unsigned int length) override;
+
+    int calcOutputSize(unsigned int length) override;
 };

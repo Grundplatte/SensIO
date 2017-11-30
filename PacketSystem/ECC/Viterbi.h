@@ -5,7 +5,7 @@
 #include <bitset>  
 
 #include "../../Defines.h"
-#include "ECC.h"
+//#include "ECC.h"
 
 /**
  * Class intended for use and testing of the Convolutional encoding and decoding using the Viterbi algorithm
@@ -15,7 +15,15 @@
  * Program should adapt to the number of the shift registers (K, constraint number)
 */
 
-class Viterbi : ECC
+// Constraint level (number of shift registers, not including the input ones)
+#define K 2
+// Number of input ports of encoder
+#define k 1
+// Number of output ports of encoder
+#define n 2
+
+// TODO: rework
+class Viterbi
 {
 public:
 	// <------------- CODING FUNCTIONS ------------->
