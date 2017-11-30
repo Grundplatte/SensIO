@@ -5,11 +5,27 @@
 #include <cstring>
 #include "NoEDC.h"
 
-int NoEDC::generate(byte *input, int length, byte *output) {
-    memcpy(output, input, length);
-    return length;
+NoEDC::NoEDC() {
+    std::shared_ptr<spdlog::logger> log;
+    log = spd::get("NoEDC");
+
+    if (log)
+        m_log = log;
+    else
+        m_log = spd::stdout_color_mt("NoEDC");
 }
 
-int NoEDC::check(byte *input, int length) {
+NoEDC::~NoEDC() {}
+
+
+int NoEDC::generate(byte *input, unsigned int length, byte *output) {
+    return 0;
+}
+
+int NoEDC::check(byte *input, unsigned int length) {
+    return 0;
+}
+
+int NoEDC::calcOutputSize(unsigned int length) {
     return 0;
 }

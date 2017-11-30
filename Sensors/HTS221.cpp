@@ -1,8 +1,18 @@
 #include "HTS221.h"
 
 HTS221::HTS221() {
+    std::shared_ptr<spdlog::logger> log;
+    log = spd::get("HTS221");
+
+    if (log)
+        m_log = log;
+    else
+        m_log = spd::stdout_color_mt("HTS221");
+
     m_i2c = new I2C_HAL();
 }
+
+HTS221::~HTS221() {}
 
 int HTS221::isSensReady(byte status)
 {
@@ -25,12 +35,15 @@ int HTS221::getStatus(byte *status)
 int HTS221::waitForSensReady()
 {
 	byte status;
-	unsigned int i;
-	int result;
-	
+    int i;
+
+    m_log->debug("Waiting for sensor...");
+
 	for(i=0; i<CONF; i++){
 		do {
-			result = getStatus(&status);
+            getStatus(&status);
+
+            // TODO: if this takes more then a few cycles, check if sensor is active
 		} while(!isSensReady(status));
 	}
 	return 0;
@@ -40,18 +53,17 @@ int HTS221::waitForSensReady()
 int HTS221::sendBit(byte bit)
 {
     byte data[2];
-    byte status;
-		
-	//printf("[D] sendBit %x\n", bit?1:0);
-	
+
 	// 0
 	if(bit == 0x00){
 		// read tmpout register with autoincrement address
+        m_log->debug("Send bit 0");
 		m_i2c->read(I2C_TEMP_ADDR, I2C_TEMP_REG_TMP_OUT_L + 0x80, 2, data);
 	}
 	else{
 		// 1
 		// read humout
+        m_log->debug("Send bit 1");
         m_i2c->read(I2C_TEMP_ADDR, I2C_TEMP_REG_HUM_OUT_L + 0x80, 2, data);
 	}
 	
@@ -61,9 +73,11 @@ int HTS221::sendBit(byte bit)
 int HTS221::sendReset()
 {
     byte data[4];
+
+    // read both (tmpout + humout) in one go
     m_i2c->read(I2C_TEMP_ADDR, I2C_TEMP_REG_HUM_OUT_L + 0x80, 4, data);
-	
-	return 0;
+
+    return 0;
 }
 
 /*
@@ -73,8 +87,7 @@ int HTS221::sendReset()
 // send raw data
 int HTS221::send(byte *data, int length)
 {
-	unsigned int l;
-	int i;
+    int i, l;
     byte bit;
 	struct timespec req, rem;
 	
@@ -91,47 +104,50 @@ int HTS221::send(byte *data, int length)
 			
 			nanosleep(&req, &rem);
 		}
-		printf("[D] send: sent 0x%02x\n", data[l]);
 	}
 }
 
 int HTS221::tryReadBit()
 {
     byte status;
-	unsigned int i;
-	int result;
-	result = getStatus(&status);
-		
+    int i;
+
+    getStatus(&status);
+
 	// nothing read
 	if(isSensReady(status)){
 		return -1;
 	}
 	// temp was read => 0
 	if(isHumReady(status) && !isTempReady(status)){
+        // FIXME: wait a few ms, then read again to put less pressure on the bus
 		// reread a few times to confirm
 		for(i=0; i<CONF; i++){
-			result = getStatus(&status);
+            getStatus(&status);
 			if(!isHumReady(status)){
-				printf("[E] tryReadBit: someone interfered?\n");
-				return -2;
+                m_log->warn("Someone interfered?\n");
 			}
 		}
+
+        m_log->debug("Received bit 0");
 		return 0;
 	}
 	// hum was read => 1
 	if(isTempReady(status) && !isHumReady(status)){
+        // FIXME: wait a few ms, then read again to put less pressure on the bus
 		// reread a few times to confirm
 		for(i=0; i<CONF; i++){
-			result = getStatus(&status);
+            getStatus(&status);
 			if(!isTempReady(status)){
-				printf("[E] tryReadBit: someone interfered?\n");
-				return -2;
+                m_log->warn("Someone interfered?\n");
 			}
 		}
+
+        m_log->debug("Received bit 1");
 		return 1;
 	}
 	// error
-	printf("[E] tryReadBit: status corrupted:  0x%x\n", status);
+    m_log->warn("Status corrupted:  0x{0:2x}\n", status);
 	return -2;
 }
 
@@ -141,8 +157,7 @@ int HTS221::tryReadBit()
 
 int HTS221::receive(uint8_t *data)
 {
-	uint32_t l;
-	int bit, i;
+    int bit, i, l;
 	
 	for(l=0; l<sizeof(data); l++){
 		data[l] = 0;
@@ -163,7 +178,7 @@ int HTS221::receive(uint8_t *data)
 				//printf("[D] receive: received 0\n", data[l]);
 			}
 		}
-		printf("[D] receive: received 0x%02x\n", data[l]);
+        m_log->debug("receive: received 0x{0:2x}\n", data[l]);
 	}
 }
 
@@ -173,9 +188,8 @@ int HTS221::receive(uint8_t *data)
 // TODO: adjust access times
 int HTS221::detectUsage()
 {
-	int result;
-	uint8_t status;
-	uint32_t i;
+    byte status;
+    int i;
 	struct timespec *time1p, *time2p, *temp, time1, time2;
 	long int diffs, diffns;
 	
@@ -185,12 +199,12 @@ int HTS221::detectUsage()
 	for(i=0; i<10; i++){
 		// wait for ready
 		do {
-			result = getStatus(&status);
+            getStatus(&status);
 		} while(!isSensReady(status));
 		
 		// wait for someone to read sensor results
 		do {
-			result = getStatus(&status);
+            getStatus(&status);
 		} while(isSensReady(status));
 		
 		clock_gettime(CLOCK_REALTIME, time1p);
@@ -204,8 +218,8 @@ int HTS221::detectUsage()
 				diffs -= 1;
 				diffns += 1000000000;
 			}
-			
-			printf("[D] Sensor used after %2i.%3is\n", diffs, diffns/1000000L);
+
+            m_log->debug("Sensor used after {0:2}.{1:3}s\n", diffs, diffns / 1000000L);
 		}
 		
 		// switch time pointers
@@ -213,4 +227,36 @@ int HTS221::detectUsage()
 		time1p = time2p;
 		time2p = temp;
 	}
+}
+
+int HTS221::isActive() {
+    byte data;
+
+    // read both (tmpout + humout) in one go
+    m_i2c->read(I2C_TEMP_ADDR, I2C_TEMP_REG_CTRL1, 1, &data);
+
+    if (data & 0x80) {
+        // active
+        if ((data & 0x07) != 0x07) {
+            data = 0x87;
+            m_i2c->write(I2C_TEMP_ADDR, I2C_TEMP_REG_CTRL1, 1, &data);
+        }
+
+        return 1;
+    }
+
+    return 0;
+}
+
+int HTS221::toggleOnOff(bool onOff) {
+    byte data;
+
+    if (onOff)
+        data = 0x87;
+    else
+        data = 0x07;
+
+    m_i2c->write(I2C_TEMP_ADDR, I2C_TEMP_REG_CTRL1, 1, &data);
+
+    return 0;
 }

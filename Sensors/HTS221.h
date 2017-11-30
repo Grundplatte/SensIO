@@ -28,26 +28,36 @@ class HTS221 : public Sensor {
 public:
     HTS221();
 
+    ~HTS221();
+
+    int isActive() override;
+
+    int toggleOnOff(bool onOff) override;
+
     // TODO: export to midlayer
-    int waitForSensReady();
-    int sendBit(uint8_t bit);
-    int tryReadBit();
-    int sendReset();
+    int waitForSensReady() override;
+
+    int sendBit(uint8_t bit) override;
+
+    int tryReadBit() override;
+
+    int sendReset() override;
+
+    // not used
+    int send(byte *data, int length);
+
+    int receive(byte *data);
+
+    int detectUsage();
 
 private:
+
     I2C_HAL *m_i2c;
 
     int isSensReady(uint8_t status);
     int isTempReady(uint8_t status);
     int isHumReady(uint8_t status);
     int getStatus(uint8_t *status);
-
-
-
-// TODO: old stuff
-    int detectUsage();
-    int send(byte *data, int length);
-    int receive(byte *data);
 };
 
 

@@ -1,11 +1,13 @@
 #include "Viterbi.h"
 
+using namespace std;
+
 void Viterbi::startProcess()
 {
-	std::cout << std::endl << "||||||||||||||||||||||||||||||||||||||||" << std::endl;
-	std::cout << "|||||Viterbi Convolutional Decoder||||||" << std::endl;
-	std::cout << "|||||||||TU Graz - Fikret Basic|||||||||" << std::endl,
-	std::cout << "||||||||||||||||||||||||||||||||||||||||" << std::endl;
+    cout << endl << "||||||||||||||||||||||||||||||||||||||||" << endl;
+    cout << "|||||Viterbi Convolutional Decoder||||||" << endl;
+    cout << "|||||||||TU Graz - Fikret Basic|||||||||" << endl,
+            cout << "||||||||||||||||||||||||||||||||||||||||" << endl;
 }
 
 
@@ -31,14 +33,14 @@ Viterbi::Viterbi()
 
 	startProcess();
 
-	std::cout << "\nNum. of inputs: " << (int)kPrim;
-	std::cout << "\nNum. of outputs: " << n;
-	std::cout << "\nConstraint level: " << (int)kOne << "\n\n";
+    cout << "\nNum. of inputs: " << (int) kPrim;
+    cout << "\nNum. of outputs: " << n;
+    cout << "\nConstraint level: " << (int) kOne << "\n\n";
 		
 	// The loop goes through every row (state) 2^(K-1) and updates it based on the shift of every specific input (2^k)
 	for(size_t i = 0; i < pow(2, kOne); i++)
 	{
-		std::vector<byte> temp;
+        vector<byte> temp;
 		
 		temp.resize(pow(2, kOne));
 		for (size_t j = 0; j < pow(2, kOne); j++)
@@ -47,7 +49,7 @@ Viterbi::Viterbi()
 		}
 		input_table.push_back(temp);
 
-		temp = std::vector<byte>();
+        temp = vector<byte>();
 
 		for (size_t j = 0; j < pow(2, kPrim); j++)
 		{
@@ -70,7 +72,7 @@ Viterbi::Viterbi()
 	// .... to write ...
 	for (byte i = 0; i < pow(2, kOne); i++)
 	{
-		std::vector<byte> temp;
+        vector<byte> temp;
 
 		for (byte j = 0; j < pow(2, kPrim); j++)
 		{
@@ -104,87 +106,87 @@ Viterbi::Viterbi()
 	
 	// <------------------- cout testing ------------------->
 
-	std::cout << "\nSequence State table" << std::endl << std::endl;
+    cout << "\nSequence State table" << endl << endl;
 
-	std::cout << "   ";
-
-	for (byte j = 0; j < pow(2, kPrim); j++)
-	{
-		std::cout << (int)j << " ";
-	}
-
-	std::cout << std::endl;
-
-	for (byte i = 0; i < pow(2, kOne); i++)
-	{
-		std::cout << (int)i << ": ";
-
-		for (byte j = 0; j < pow(2, kPrim); j++)
-		{
-			std::cout << (int)state_table.at(i).at(j) << " ";
-		}
-
-		std::cout << std::endl;
-	}
-
-
-	std::cout << "\nOutput table" << std::endl << std::endl;
-
-	std::cout << "   ";
+    cout << "   ";
 
 	for (byte j = 0; j < pow(2, kPrim); j++)
 	{
-		std::cout << (int)j << " ";
-	}
+        cout << (int) j << " ";
+    }
 
-	std::cout << std::endl;
+    cout << endl;
 
 	for (byte i = 0; i < pow(2, kOne); i++)
 	{
-		std::cout << (int)i << ": ";
+        cout << (int) i << ": ";
 
 		for (byte j = 0; j < pow(2, kPrim); j++)
 		{
-			std::cout << (int)output_table.at(i).at(j) << " ";
+            cout << (int) state_table.at(i).at(j) << " ";
 		}
 
-		std::cout << std::endl;
+        cout << endl;
 	}
 
 
-	std::cout << "\nInput value table" << std::endl << std::endl;
+    cout << "\nOutput table" << endl << endl;
 
-	std::cout << "    ";
+    cout << "   ";
+
+	for (byte j = 0; j < pow(2, kPrim); j++)
+	{
+        cout << (int) j << " ";
+    }
+
+    cout << endl;
+
+	for (byte i = 0; i < pow(2, kOne); i++)
+	{
+        cout << (int) i << ": ";
+
+		for (byte j = 0; j < pow(2, kPrim); j++)
+		{
+            cout << (int) output_table.at(i).at(j) << " ";
+		}
+
+        cout << endl;
+	}
+
+
+    cout << "\nInput value table" << endl << endl;
+
+    cout << "    ";
 
 	for (byte j = 0; j < pow(2, kOne); j++)
 	{
-		std::cout << (int)j << "  ";
-	}
+        cout << (int) j << "  ";
+    }
 
-	std::cout << std::endl;
+    cout << endl;
 
 	for (byte i = 0; i < pow(2, kOne); i++)
 	{
-		std::cout << (int)i << " : ";
+        cout << (int) i << " : ";
 
 		for (byte j = 0; j < pow(2, kOne); j++)
 		{
-			std::cout << (int)input_table.at(i).at(j) << " ";
+            cout << (int) input_table.at(i).at(j) << " ";
 		}
 
-		std::cout << std::endl;
+        cout << endl;
 	}
 
 	//for (byte i = 0; i < pow(2, kOne); i++)
 	//{
 	//	for (byte j = 0; j < pow(2, kPrim); j++)
 	//	{
-	//		std::bitset<8> bitTestS{ i };
-	//		std::bitset<8> bitTestB{ j };
-	//		std::bitset<8> bitTest1{ output_table.at(i).at(j) };
-	//		std::cout << "State: " << bitTestS << " , Input bit: " << bitTestB << " , Next state: " << bitTest1 << std::endl;
+    //		bitset<8> bitTestS{ i };
+    //		bitset<8> bitTestB{ j };
+    //		bitset<8> bitTest1{ output_table.at(i).at(j) };
+    //		cout << "State: " << bitTestS << " , Input bit: " << bitTestB << " , Next state: " << bitTest1 << endl;
 	//	}
-	//	std::cout << std::endl;
+    //	cout << endl;
 	//}
 }
 
@@ -221,10 +223,10 @@ byte Viterbi::calcHammingDistance(byte val1, byte val2)
 
 // Takes in consideration that the input is a sequence of bits, where the output will be the same (hence, on the pre-encoder side, values need
 // to be transfored so that each byte of the vector is actually a bit)
-std::vector<byte> Viterbi::encode(std::vector<byte> input)
+vector<byte> Viterbi::encode(vector<byte> input)
 {
 	byte state = 0;
-	std::vector<byte> encoded;
+    vector<byte> encoded;
 
 	for (size_t i = 0; i < input.size(); i++)
 	{
@@ -239,23 +241,22 @@ std::vector<byte> Viterbi::encode(std::vector<byte> input)
 		state = getNextState(state, 0);
 	}
 
-	std::cout << "Encoded output: ";
+    cout << "Encoded output: ";
 
 	for (size_t i = 0; i < encoded.size(); i++)
 	{
-		std::cout << (int)encoded.at(i) << " ";
-	}
+        cout << (int) encoded.at(i) << " ";
+    }
 
-	std::cout << "\n\n";
+    cout << "\n\n";
 
 	return encoded;
 }
 
 
-std::vector<byte> Viterbi::decode(std::vector<byte> input)
-{
-	std::vector<std::vector<byte > > error_metric;
-	std::vector<std::vector<byte > > state_history;
+vector<byte> Viterbi::decode(vector<byte> input) {
+    vector<vector<byte> > error_metric;
+    vector<vector<byte> > state_history;
 
 	error_metric.resize(output_table.size());
 	state_history.resize(output_table.size());
@@ -265,18 +266,18 @@ std::vector<byte> Viterbi::decode(std::vector<byte> input)
 		error_metric.at(i).resize(input.size());
 		state_history.at(i).resize(input.size() +  1);
 	}
-		
-	std::vector<byte> states(1);
-	std::vector<byte> tempVec;
+
+    vector<byte> states(1);
+    vector<byte> tempVec;
 
 	/* First, it is necessary to set two tables, one for error metric and the other for previous state history.
 	   Average error rate is calculated with the hamming distance, and always checked with the conflicting sate sequentions.  */
 
 	for (size_t i = 0; i < input.size(); i++)
 	{
-		tempVec = std::vector<byte>();
+        tempVec = vector<byte>();
 
-		std::vector<bool> inputVerification(error_metric.size());
+        vector<bool> inputVerification(error_metric.size());
 
 		for (size_t j = 0; j < states.size(); j++)
 		{
@@ -323,8 +324,8 @@ std::vector<byte> Viterbi::decode(std::vector<byte> input)
 
 	// <------------ Traceback ------------>
 
-	std::vector<byte> state_sequence(input.size() + 1);
-	std::vector<byte> decoded(input.size());
+    vector<byte> state_sequence(input.size() + 1);
+    vector<byte> decoded(input.size());
 
 	byte min = error_metric.at(0).at(error_metric.at(0).size() - 1);
 	byte minPos = 0;
@@ -355,38 +356,38 @@ std::vector<byte> Viterbi::decode(std::vector<byte> input)
 
 	for (size_t i = 0; i < state_history.size(); i++)
 	{
-		std::cout << "State history: " << (int)i << "   ";
+        cout << "State history: " << (int) i << "   ";
 
 		for(size_t j = 0; j < state_history.at(i).size(); j++)
 		{
-			std::cout << (int)state_history.at(i).at(j) << "  ";
+            cout << (int) state_history.at(i).at(j) << "  ";
 		}
 
-		std::cout << "\n\n";
-	}
+        cout << "\n\n";
+    }
 
-	std::cout << "\n";
+    cout << "\n";
 
 	for (size_t i = 0; i < error_metric.size(); i++)
 	{
-		std::cout << "Average metric cost: " << (int)i << "   ";
+        cout << "Average metric cost: " << (int) i << "   ";
 
 		for (size_t j = 0; j < error_metric.at(i).size(); j++)
 		{
-			std::cout << (int)error_metric.at(i).at(j) << "  ";
+            cout << (int) error_metric.at(i).at(j) << "  ";
 		}
 
-		std::cout << "\n\n";
-	}
+        cout << "\n\n";
+    }
 
-	std::cout << std::endl << "Decoded sequence: ";
+    cout << endl << "Decoded sequence: ";
 
 	for (size_t i = 0; i < decoded.size(); i++)
 	{
-		std::cout << (int)decoded.at(i) << "  ";
-	}
+        cout << (int) decoded.at(i) << "  ";
+    }
 
-	//std::cout << std::endl;
+    //cout << endl;
 
 	return decoded;
 }
