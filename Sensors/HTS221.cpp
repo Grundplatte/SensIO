@@ -219,7 +219,7 @@ int HTS221::detectUsage()
 				diffns += 1000000000;
 			}
 
-            m_log->debug("Sensor used after {0:2}.{1:3}s\n", diffs, diffns / 1000000L);
+            m_log->debug("Sensor used after {0:2}.{1:3}s", diffs, diffns / 1000000L);
 		}
 		
 		// switch time pointers
@@ -234,6 +234,8 @@ int HTS221::isActive() {
 
     // read both (tmpout + humout) in one go
     m_i2c->read(I2C_TEMP_ADDR, I2C_TEMP_REG_CTRL1, 1, &data);
+
+    m_log->debug("Sensor HTS221 data: 0x{0:2x}", data);
 
     if (data & 0x80) {
         // active
@@ -250,6 +252,8 @@ int HTS221::isActive() {
 
 int HTS221::toggleOnOff(bool onOff) {
     byte data;
+
+    m_log->debug("Sensor HTS221 toggle: {0}", onOff);
 
     if (onOff)
         data = 0x87;

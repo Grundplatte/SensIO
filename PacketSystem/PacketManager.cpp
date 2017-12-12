@@ -63,9 +63,6 @@ int PacketManager::waitForRequest(byte *sqnHad) {
 
         if (bit) {
             *sqnHad |= (1 << i);
-            //printf("[D] receive: received 1\n");
-        } else {
-            //printf("[D] receive: received 0\n");
         }
     }
 
