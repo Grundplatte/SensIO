@@ -18,14 +18,15 @@ NoEDC::NoEDC() {
 NoEDC::~NoEDC() {}
 
 
-int NoEDC::generate(byte *input, unsigned int length, byte *output) {
-    return 0;
+int NoEDC::generate(std::vector<bit> input, std::vector<bit> &output) {
+    output = input;
+    return output.size();
 }
 
-int NoEDC::check(byte *input, unsigned int length) {
+int NoEDC::check(std::vector<bit> input, int length) {
     return 0;
 }
 
 int NoEDC::calcOutputSize(unsigned int length) {
-    return 0;
+    return length;
 }

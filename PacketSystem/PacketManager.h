@@ -6,6 +6,7 @@
 #include <unistd.h>
 #include <time.h>
 #include <string.h>
+#include <bitset>
 
 #include "../spdlog/spdlog.h"
 
@@ -44,7 +45,7 @@ public:
      * @param packet: packet to send
      * @return: 0 on success, -1 on error
      **/
-    int send(byte *packet);
+    int send(std::vector<bit> packet);
 
     /**
      * Receive a packet and check its sequence number
@@ -52,7 +53,7 @@ public:
      * @param sqn: sequence number
      * @return: 0 on success, -1 on timeout (no data), -2 on timeout (not enough data),
      **/
-    int receive(byte *packet, unsigned int sqn);
+    int receive(std::vector<bit> &packet, unsigned int sqn);
 
     /**
      * Unpacks a packet-stream (must be a valid packet)
@@ -62,7 +63,10 @@ public:
      * @param output: buffer for the unpacked data
      * @return: output length in bytes
      **/
-    int unpack(byte *packets, unsigned int numPackets, byte **output);
+// TODO: change to bitset
+    int unpack(std::vector<std::vector<bit> > packets, byte **output);
+
+    int unpack(std::vector<std::vector<bit> > packets, std::vector<bit> &output);
 
     /**
      * Packs data into a packet-stream
@@ -71,7 +75,9 @@ public:
      * @param output: packet buffer
      * @return: number of packets
      **/
-    int pack(byte *data, unsigned int length, byte **output);
+    int pack(const byte *data, unsigned int length, std::vector<std::vector<bit> > &output);
+
+    int pack(std::vector<bit> data, unsigned int length, std::vector<std::vector<bit> > &output);
 
     /**
      * Calculates the packet size in bytes
@@ -84,14 +90,17 @@ public:
 private:
     // maximum of 15 bits supported for berger codes
     static const unsigned int P_DATA_BITS = 12;
-
     static const unsigned int P_SQN_BITS = 3;
 
-    int check(byte *packet, unsigned int sqn);
+    int check(std::vector<bit> packet, unsigned int sqn);
 
     int getPacketSizeInBits();
+
     ECC *m_ECC;
+    int ECC_bitcount;
     EDC *m_EDC;
+    int EDC_bitcount;
+
     Sensor *m_sens;
     std::shared_ptr<spd::logger> m_log;
 };

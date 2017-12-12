@@ -12,9 +12,9 @@ public:
 
     ~NoEDC();
 
-    int generate(byte *input, unsigned int length, byte *output) override;
+    int generate(std::vector<bit> input, std::vector<bit> &output) override;
 
-    int check(byte *input, unsigned int length) override;
+    int check(std::vector<bit> input, int length) override;
 
     int calcOutputSize(unsigned int length) override;
 };

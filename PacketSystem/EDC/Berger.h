@@ -4,6 +4,7 @@
 
 #pragma once
 
+#include <bitset>
 #include "EDC.h"
 
 class Berger: public EDC {
@@ -19,7 +20,7 @@ public:
      * length: input length in byte (TODO: change to bit)
      * return: output length in byte (TODO: change to bit)
      */
-    int generate(byte *input, unsigned int length, byte *output) override;
+    int generate(std::vector<bit> input, std::vector<bit> &output) override;
 
     /*
      * Validate the payload + berger code
@@ -27,7 +28,7 @@ public:
      * length: input length in byte (TODO: change to bit)
      * return: valid (0) or invalid(-1)
      */
-    int check(byte *input, unsigned int length) override;
+    int check(std::vector<bit> input, int datasize) override;
 
     int calcOutputSize(unsigned int length) override;
 

@@ -50,22 +50,21 @@ int HTS221::waitForSensReady()
 }
 
 // read temp = 0; read hum = 1;
-int HTS221::sendBit(byte bit)
+int HTS221::sendBit(bit bit)
 {
     byte data[2];
 
-	// 0
-	if(bit == 0x00){
+    // 1
+    if (bit) {
 		// read tmpout register with autoincrement address
-        m_log->debug("Send bit 0");
-		m_i2c->read(I2C_TEMP_ADDR, I2C_TEMP_REG_TMP_OUT_L + 0x80, 2, data);
-	}
-	else{
-		// 1
-		// read humout
         m_log->debug("Send bit 1");
         m_i2c->read(I2C_TEMP_ADDR, I2C_TEMP_REG_HUM_OUT_L + 0x80, 2, data);
-	}
+    } else {
+        // 0
+        // read humout
+        m_log->debug("Send bit 0");
+        m_i2c->read(I2C_TEMP_ADDR, I2C_TEMP_REG_TMP_OUT_L + 0x80, 2, data);
+    }
 	
 	return 0;
 }
@@ -250,7 +249,8 @@ int HTS221::isActive() {
     return 0;
 }
 
-int HTS221::toggleOnOff(bool onOff) {
+int HTS221::toggleOnOff(bit
+onOff) {
     byte data;
 
     m_log->debug("Sensor HTS221 toggle: {0}", onOff);

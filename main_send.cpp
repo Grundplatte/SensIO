@@ -1,7 +1,9 @@
 #include <iostream>
+#include <bitset>
 #include "spdlog/spdlog.h"
 #include "PacketSystem/PacketManager.h"
 #include "PacketSystem/ECC/Hadamard.h"
+#include "PacketSystem/EDC/Berger.h"
 
 namespace spd = spdlog;
 
@@ -25,7 +27,8 @@ int main() {
     log->info("Sender started. Waiting for Request");
 
     byte data[21] = "TESTaTESTbTESTcTESTd";
-    byte *packets, sqn, sqnHad;
+    std::vector<std::vector<bit> > packets;
+    byte sqn, sqnHad;
     int result;
 
     PacketManager *ps = new PacketManager();
@@ -34,9 +37,7 @@ int main() {
 
     int packetSqn = -1;
     int modSqn = ps->getMaxSqn();
-    int numPackets = ps->pack(data, 20, &packets);
-    int bytesPerPacket = ps->calcBytesPerPacket();
-
+    ps->pack(data, 20, packets);
 
     while(1) {
         switch (state) {
@@ -90,7 +91,7 @@ int main() {
 
             case SEND_PACKET:
                 log->info("Sending packet {0}", packetSqn);
-                ps->send(packets + packetSqn * bytesPerPacket);
+                ps->send(packets.at(packetSqn));
                 state = CHECK_FOR_SQN;
                 break;
 
