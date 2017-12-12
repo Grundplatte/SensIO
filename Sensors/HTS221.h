@@ -32,12 +32,12 @@ public:
 
     int isActive() override;
 
-    int toggleOnOff(bool onOff) override;
+    int toggleOnOff(bit onOff) override;
 
     // TODO: export to midlayer
     int waitForSensReady() override;
 
-    int sendBit(uint8_t bit) override;
+    int sendBit(bit bit) override;
 
     int tryReadBit() override;
 

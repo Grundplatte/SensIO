@@ -1,4 +1,5 @@
 #include <cmath>
+#include <utility>
 #include "PacketManager.h"
 #include "ECC/Hadamard.h"
 #include "EDC/Berger.h"
@@ -145,125 +146,139 @@ int PacketManager::request(unsigned int sqn) {
     for (i = 0; i < hadBitSize; i++) {
         // wait until the sensor is ready
         m_sens->waitForSensReady();
-        m_sens->sendBit(sqnHad & (1 << (i % 8)));
+        m_sens->sendBit((bit) (sqnHad & (1 << (i % 8))));
     }
 
     return 0;
 }
 
+int PacketManager::pack(const byte *data, unsigned int length, std::vector<std::vector<bit> > &output) {
+
+    if (length == 0)
+        return -1;
+
+    std::vector<bit> data_bit;
+
+    // convert byte data to bits
+    for (int i = 0; i < length; i++) {
+        for (int l = 0; l < 8; l++) {
+            data_bit.push_back((data[i] & (1 << l)));
+        }
+    }
+
+    return pack(data_bit, length, output);
+}
 // send one packet (12bit data, 3bit sqn, 4bit edc = 19bit)
 // memory is allocated inside the function, must be freed by caller after use
-int PacketManager::pack(byte *data, unsigned int length, byte **output)
+int PacketManager::pack(std::vector<bit> data, unsigned int length, std::vector<std::vector<bit> > &output)
 {
     if(length == 0)
         return -1;
 
-    unsigned int numPackets = (length * 8 - 1) / P_DATA_BITS + 1;
-    unsigned int bytesPerPacket = (unsigned int) calcBytesPerPacket();
-    unsigned int modSqn = getMaxSqn() + 1;
+    output.clear();
 
-    m_log->info("numPackets = {0}, bytesPerPacket = {1}, modSqn = {2}", numPackets, bytesPerPacket, modSqn);
+    int modSqn = getMaxSqn() + 1;
 
-    *output = (byte *) malloc(numPackets * bytesPerPacket * sizeof(byte));
-    memset(*output, 0, numPackets * bytesPerPacket * sizeof(byte));
+    m_log->debug("Packing {0} bit", data.size());
 
-    unsigned int outBitIndex, packetIndex, inBitIndex;
+    // split into P_DATA_BITS bit packets
+    int global_i = 0;
+    int packet_sqn = 0;
+    while (global_i < data.size()) {
+        std::vector<bit> temp;
+        std::vector<bit> temp_enc;
 
-    inBitIndex = 0;
-    for (packetIndex = 0; packetIndex < numPackets; packetIndex++) {
-        // data
-        for (outBitIndex = 0; outBitIndex < P_DATA_BITS; outBitIndex++) {
-            (*output)[packetIndex * bytesPerPacket + outBitIndex / 8] |=
-                    ((data[inBitIndex / 8] >> (inBitIndex % 8)) & 1) << (outBitIndex % 8);
-            inBitIndex++;
+        // data bits
+        for (int local_i = 0; local_i < P_DATA_BITS; local_i++) {
+            temp.push_back(data[global_i]);
+            global_i++;
+
+            // fill last packet with zeros
+            // TODO: better solution
+            if (global_i >= data.size()) {
+                int missing = P_DATA_BITS - temp.size();
+                for (int i = 0; i < missing; i++) {
+                    temp.push_back(false);
+                }
+                break;
+            }
         }
 
-        //printf(">>sqn: %i\n", packetIndex%modSqn);
-        //printf(">>data: 0x%x 0x%x\n", data[inBitIndex/8]);
-
-        // sqn
-        unsigned int sqnBit = 0;
-        for (; outBitIndex < P_DATA_BITS + P_SQN_BITS; outBitIndex++) {
-            (*output)[packetIndex * bytesPerPacket + outBitIndex / 8] |=
-                    (((packetIndex % modSqn) >> sqnBit) & 1) << (outBitIndex % 8);
-            sqnBit++;
+        // add sqn bits
+        for (int local_i = 0; local_i < P_SQN_BITS; local_i++) {
+            temp.push_back((bit) ((packet_sqn % modSqn) & (1 << local_i)));
         }
+        packet_sqn++;
 
-        // generate edc (Berger)
-        unsigned int bergerBit, bergerLength;
-        byte berger;
-        bergerLength = m_EDC->generate((*output) + (packetIndex * bytesPerPacket), P_DATA_BITS + P_SQN_BITS, &berger);
+        // add EDC bits
+        m_EDC->generate(temp, temp_enc);
 
-        //printf(">>berger: 0x%x\n", berger);
-        for (bergerBit = 0; bergerBit < bergerLength; bergerBit++) {
-            (*output)[packetIndex * bytesPerPacket + outBitIndex / 8] |=
-                    ((berger >> bergerBit) & 1) << (outBitIndex % 8);
-            outBitIndex++;
-        }
-        //printf("> PacketManager: 0x%x 0x%x 0x%x\n", (*output)[i*3 + 0], (*output)[i*3 + 1], (*output)[i*3 + 2]);
+        // packet complete => add to output array
+        output.push_back(temp_enc);
     }
-    return numPackets;
+
+    m_log->debug("Got {0} packets with {1} bit each", output.size(), output.front().size());
+}
+
+int PacketManager::unpack(std::vector<std::vector<bit> > packets, byte **output) {
+    std::vector<bit> output_bit;
+    unpack(std::move(packets), output_bit);
+
+    size_t bytes = 1 + (output_bit.size() - 1) / 8;
+    (*output) = (byte *) malloc(bytes);
+
+    // FIXME: put in warning that other people will understand
+    m_log->warn("Data not byte sized.");
+
+    for (int i = 0; i < output_bit.size(); i++) {
+        (*output)[i / 8] |= (1 << (i % 8));
+    }
 }
 
 // Use PacketManager::check() to verify the integrity of the packets before using this function
-int PacketManager::unpack(byte *packets, unsigned int numPackets, byte **output) {
-    unsigned int bytesPerPacket = (unsigned int) calcBytesPerPacket();
-    unsigned int numDataBytes = numPackets * P_DATA_BITS / 8;
+int PacketManager::unpack(std::vector<std::vector<bit> > packets, std::vector<bit> &output) {
 
-    *output = (byte *) malloc(numDataBytes * sizeof(byte));
-    memset(*output, 0, numDataBytes * sizeof(byte));
+    output.clear();
 
-    unsigned int outBitIndex, packetIndex, inBitIndex;
-
-    // TODO: check order of packets
-    outBitIndex = 0;
-    for (packetIndex = 0; packetIndex < numPackets; packetIndex++) {
-        // data
-        for (inBitIndex = 0; inBitIndex < P_DATA_BITS; inBitIndex++) {
-            (*output)[outBitIndex / 8] |=
-                    ((packets[packetIndex * bytesPerPacket + inBitIndex / 8] >> (inBitIndex % 8)) & 1)
-                            << (outBitIndex % 8);
-            outBitIndex++;
+    for (auto &packet : packets) {
+        for (int l = 0; l < P_DATA_BITS; l++) {
+            output.push_back(packet[l]);
         }
     }
-    return outBitIndex;
+
+    return output.size();
 }
 
 // send packet
-int PacketManager::send(byte *packet) {
-    unsigned int i, packetBitSize;
+int PacketManager::send(std::vector<bit> packet) {
     struct timespec req, rem;
-
-    packetBitSize = P_DATA_BITS + P_SQN_BITS + m_EDC->calcOutputSize(P_DATA_BITS + P_SQN_BITS);
-
     req.tv_sec = 0;
     req.tv_nsec = 100000000; // 100ms
 
     m_sens->waitForSensReady();
     nanosleep(&req, &rem);
 
-    for (i = 0; i < packetBitSize; i++) {
+    for (int i = 0; i < packet.size(); i++) {
         //printf("[D] Sending bit %i/%i\n", i, packetBitSize);
 
         // wait until the sensor is ready
         m_sens->waitForSensReady();
-        m_sens->sendBit(packet[i / 8] & (1 << (i % 8)));
+        m_sens->sendBit(packet[i]);
     }
 
     return 0;
 }
 
-int PacketManager::receive(byte *packet, unsigned int sqn) {
-    int packetBitSize, packetByteSize, bit, i;
+int PacketManager::receive(std::vector<bit> &packet, unsigned int sqn) {
+    int bit;
     struct timespec start, stop;
     double accum;
+    size_t packetBitSize = P_DATA_BITS + P_SQN_BITS + m_EDC->calcOutputSize(P_DATA_BITS + P_SQN_BITS);
 
-    packetBitSize = P_DATA_BITS + P_SQN_BITS + m_EDC->calcOutputSize(P_DATA_BITS + P_SQN_BITS);
-    packetByteSize = calcBytesPerPacket();
+    // clean up
+    packet.clear();
 
-    memset(packet, 0, packetByteSize);
-
-    for (i = 0; i < packetBitSize; i++) {
+    for (int i = 0; i < packetBitSize; i++) {
         m_sens->waitForSensReady();
         clock_gettime(CLOCK_REALTIME, &start);
 
@@ -293,8 +308,9 @@ int PacketManager::receive(byte *packet, unsigned int sqn) {
         } while (bit < 0);
 
         if (bit) {
-            packet[i / 8] |= (1 << (i % 8));
+            packet.push_back(true);
         } else {
+            packet.push_back(false);
         }
     }
 
@@ -302,28 +318,16 @@ int PacketManager::receive(byte *packet, unsigned int sqn) {
     return check(packet, sqn);
 }
 
-int PacketManager::check(byte *packet, unsigned int sqn)
-{
-    byte berger_pack;
-    byte berger_calc;
+int PacketManager::check(std::vector<bit> packet, unsigned int sqn) {
+    // check edc
+    m_EDC->check(packet, P_DATA_BITS + P_SQN_BITS);
 
-    // extract berger code
-    berger_pack = 0;
-    berger_pack |= (packet[1] & 0x01) << 2;
-    berger_pack |= (packet[2] & 0xE0) >> (8 - 2);
-
-    m_EDC->generate(packet, P_DATA_BITS + P_SQN_BITS, &berger_calc);
+    // check sqn
+    // TODO: check it!
 
     // check if
-    m_log->debug("P: 0x{0:2x} 0x{1:2x} 0x{2:2x}", packet[0], packet[1], packet[2]);
-    m_log->debug("Berger: 0x{0:2x} 0x{1:2x}", berger_pack, berger_calc);
-
-    if (berger_calc == berger_pack) {
-        m_log->info("Packet {0} is ok.");
-        return 0; // packet ok
-    }
-
-    return -1; // -1 = error
+    //m_log->debug("P: 0x{0:2x} 0x{1:2x} 0x{2:2x}", packet[0], packet[1], packet[2]);
+    //m_log->debug("Berger: 0x{0:2x} 0x{1:2x}", berger_pack, berger_calc);
 }
 
 int PacketManager::calcBytesPerPacket() {

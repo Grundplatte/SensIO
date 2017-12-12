@@ -26,7 +26,7 @@ int main() {
     log->info("Receiver started.");
 
     byte data[20];
-    byte packet[3];
+    std::vector<bit> packet;
 
     int result;
     PacketManager *ps = new PacketManager();
