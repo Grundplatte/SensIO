@@ -23,7 +23,7 @@ int main() {
     /*** SET DEBUG LEVEL ***/
     spd::set_level(spd::level::debug);
 
-    log->info("Receiver started.\n");
+    log->info("Receiver started.");
 
     byte data[20];
     byte packet[3];

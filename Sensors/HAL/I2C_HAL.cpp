@@ -55,17 +55,23 @@ int I2C_HAL::write(byte slaveAddr, byte regAddr, unsigned int length, byte *data
     
     msgs[0].addr = slaveAddr;
 	msgs[0].flags = 0x00;
-	msgs[0].len = 1;
-	msgs[0].buf = &regAddr;
-	
-	msgs[1].addr = slaveAddr;
-	msgs[1].flags = 0x00;
-	msgs[1].len = length;
-	msgs[1].buf = txBuff;
+	msgs[0].len = 1 + length;
+	msgs[0].buf = (byte *) malloc(1 + length);
+
+	msgs[0].buf[0] = regAddr;
+	memcpy(msgs[0].buf + 1, data, length);
+
+	//msgs[1].addr = slaveAddr;
+	//msgs[1].flags = 0x00;
+	//msgs[1].len = length;
+	//msgs[1].buf = txBuff;
 	
 	ioctl_data.msgs = msgs;
-	ioctl_data.nmsgs = 2;
+	ioctl_data.nmsgs = 1;
 
 	result = ioctl(m_I2C, I2C_RDWR, &ioctl_data);
+
+	free(msgs[0].buf);
+
 	return result;
 }

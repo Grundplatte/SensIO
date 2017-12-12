@@ -22,7 +22,7 @@ int main() {
     /*** SET DEBUG LEVEL ***/
     spd::set_level(spd::level::debug);
 
-    log->info("Sender started. Waiting for Request\n");
+    log->info("Sender started. Waiting for Request");
 
     byte data[21] = "TESTaTESTbTESTcTESTd";
     byte *packets, sqn, sqnHad;
