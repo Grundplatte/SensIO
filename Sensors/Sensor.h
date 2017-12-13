@@ -17,7 +17,7 @@ public:
      * Toggle the sensor on/off
      * @return: -1 on error, 0 otherwise
      **/
-    virtual int toggleOnOff(bit onOff) = 0;
+    virtual int toggleOnOff(bit_t onOff) = 0;
 
     /**
      * Wait until the sensor is ready to transmit data
@@ -30,7 +30,7 @@ public:
      * @param bit: Bit to send
      * @return: -1 on error, 0 otherwise
      **/
-    virtual int sendBit(bit bit) = 0;
+    virtual int sendBit(bit_t bit) = 0;
 
     /**
      * Try to read a bit from the covert channel TODO: move to own class?

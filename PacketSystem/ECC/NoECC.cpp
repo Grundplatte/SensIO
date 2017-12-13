@@ -31,3 +31,7 @@ int NoECC::decode(byte *input, int length, byte *output) {
 int NoECC::getEncodedSize() {
     return 0;
 }
+
+int NoECC::check(byte *input, int length) {
+    return 0;
+}

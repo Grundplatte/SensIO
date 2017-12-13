@@ -20,7 +20,7 @@ public:
      * length: input length in byte (TODO: change to bit)
      * return: output length in byte (TODO: change to bit)
      */
-    int generate(std::vector<bit> input, std::vector<bit> &output) override;
+    int generate(std::vector<bit_t> input, std::vector<bit_t> &output) override;
 
     /*
      * Validate the payload + berger code
@@ -28,7 +28,7 @@ public:
      * length: input length in byte (TODO: change to bit)
      * return: valid (0) or invalid(-1)
      */
-    int check(std::vector<bit> input, int datasize) override;
+    int check(std::vector<bit_t> input, int datasize) override;
 
     int calcOutputSize(unsigned int length) override;
 

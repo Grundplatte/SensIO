@@ -115,26 +115,27 @@ int PacketManager::checkForRequest(byte *sqnHad) {
         }
     }
 
-    m_log->info("Received sqnHad: 0x{0:2x}", *sqnHad);
+    m_log->debug("Received sqnHad: 0x{0:2x}", *sqnHad);
 
     return 0;
 }
 
 // TODO: support more than 3/8bit
 int PacketManager::request(unsigned int sqn) {
-    int i, hadBitSize;
+    int i, hadBitSize, sqn_bits;
     struct timespec req, rem;
     byte sqnByte, sqnHad;
     unsigned int modSqn = (unsigned int) getMaxSqn() + 1;
 
-
+    sqn_bits = P_SQN_BITS;
     req.tv_sec = 0;
-    req.tv_nsec = 100000000; // 100ms
+    req.tv_nsec = 10000000; // 160ms
 
     sqnByte = (byte) (sqn % modSqn & 0xFF);
-    hadBitSize = m_ECC->encode(&sqnByte, P_SQN_BITS, &sqnHad); //Hadamard implementation only supports 3bits
+    hadBitSize = m_ECC->encode(&sqnByte, sqn_bits, &sqnHad); //Hadamard implementation only supports 3bits
 
-    m_log->info("Requesting packet {0} ({1} bit sqn: 0x{2:2x})", sqn, hadBitSize, sqnHad);
+    m_log->info("Requesting packet {0}", sqn);
+    m_log->debug("{0} bit hadamard encoded sqn: 0x{1:2x}", hadBitSize, sqnHad);
 
     if (hadBitSize < 0) {
         return -1;
@@ -146,18 +147,18 @@ int PacketManager::request(unsigned int sqn) {
     for (i = 0; i < hadBitSize; i++) {
         // wait until the sensor is ready
         m_sens->waitForSensReady();
-        m_sens->sendBit((bit) (sqnHad & (1 << (i % 8))));
+        m_sens->sendBit((bit_t) (sqnHad & (1 << (i % 8))));
     }
 
     return 0;
 }
 
-int PacketManager::pack(const byte *data, unsigned int length, std::vector<std::vector<bit> > &output) {
+int PacketManager::pack(const byte *data, unsigned int length, std::vector<std::vector<bit_t> > &output) {
 
     if (length == 0)
         return -1;
 
-    std::vector<bit> data_bit;
+    std::vector<bit_t> data_bit;
 
     // convert byte data to bits
     for (int i = 0; i < length; i++) {
@@ -166,15 +167,12 @@ int PacketManager::pack(const byte *data, unsigned int length, std::vector<std::
         }
     }
 
-    return pack(data_bit, length, output);
+    return pack(data_bit, output);
 }
 // send one packet (12bit data, 3bit sqn, 4bit edc = 19bit)
 // memory is allocated inside the function, must be freed by caller after use
-int PacketManager::pack(std::vector<bit> data, unsigned int length, std::vector<std::vector<bit> > &output)
+int PacketManager::pack(std::vector<bit_t> data, std::vector<std::vector<bit_t> > &output)
 {
-    if(length == 0)
-        return -1;
-
     output.clear();
 
     int modSqn = getMaxSqn() + 1;
@@ -185,8 +183,8 @@ int PacketManager::pack(std::vector<bit> data, unsigned int length, std::vector<
     int global_i = 0;
     int packet_sqn = 0;
     while (global_i < data.size()) {
-        std::vector<bit> temp;
-        std::vector<bit> temp_enc;
+        std::vector<bit_t> temp;
+        std::vector<bit_t> temp_enc;
 
         // data bits
         for (int local_i = 0; local_i < P_DATA_BITS; local_i++) {
@@ -206,7 +204,7 @@ int PacketManager::pack(std::vector<bit> data, unsigned int length, std::vector<
 
         // add sqn bits
         for (int local_i = 0; local_i < P_SQN_BITS; local_i++) {
-            temp.push_back((bit) ((packet_sqn % modSqn) & (1 << local_i)));
+            temp.push_back((bit_t) ((packet_sqn % modSqn) & (1 << local_i)));
         }
         packet_sqn++;
 
@@ -220,8 +218,8 @@ int PacketManager::pack(std::vector<bit> data, unsigned int length, std::vector<
     m_log->debug("Got {0} packets with {1} bit each", output.size(), output.front().size());
 }
 
-int PacketManager::unpack(std::vector<std::vector<bit> > packets, byte **output) {
-    std::vector<bit> output_bit;
+int PacketManager::unpack(std::vector<std::vector<bit_t> > packets, byte **output) {
+    std::vector<bit_t> output_bit;
     unpack(std::move(packets), output_bit);
 
     size_t bytes = 1 + (output_bit.size() - 1) / 8;
@@ -236,7 +234,7 @@ int PacketManager::unpack(std::vector<std::vector<bit> > packets, byte **output)
 }
 
 // Use PacketManager::check() to verify the integrity of the packets before using this function
-int PacketManager::unpack(std::vector<std::vector<bit> > packets, std::vector<bit> &output) {
+int PacketManager::unpack(std::vector<std::vector<bit_t> > packets, std::vector<bit_t> &output) {
 
     output.clear();
 
@@ -250,10 +248,10 @@ int PacketManager::unpack(std::vector<std::vector<bit> > packets, std::vector<bi
 }
 
 // send packet
-int PacketManager::send(std::vector<bit> packet) {
+int PacketManager::send(std::vector<bit_t> packet) {
     struct timespec req, rem;
     req.tv_sec = 0;
-    req.tv_nsec = 100000000; // 100ms
+    req.tv_nsec = 10000000; // 100ms TODO: change to smaller value
 
     m_sens->waitForSensReady();
     nanosleep(&req, &rem);
@@ -269,7 +267,7 @@ int PacketManager::send(std::vector<bit> packet) {
     return 0;
 }
 
-int PacketManager::receive(std::vector<bit> &packet, unsigned int sqn) {
+int PacketManager::receive(std::vector<bit_t> &packet, unsigned int sqn) {
     int bit;
     struct timespec start, stop;
     double accum;
@@ -282,7 +280,7 @@ int PacketManager::receive(std::vector<bit> &packet, unsigned int sqn) {
         m_sens->waitForSensReady();
         clock_gettime(CLOCK_REALTIME, &start);
 
-        m_log->debug("Receiving bit {0}/{1}", i, packetBitSize);
+        //m_log->debug("Receiving bit {0}/{1}", i, packetBitSize);
         // wait until someone accesses the sensor results
         do {
             bit = m_sens->tryReadBit();
@@ -318,21 +316,26 @@ int PacketManager::receive(std::vector<bit> &packet, unsigned int sqn) {
     return check(packet, sqn);
 }
 
-int PacketManager::check(std::vector<bit> packet, unsigned int sqn) {
+int PacketManager::check(std::vector<bit_t> packet, int sqn) {
     // check edc
-    m_EDC->check(packet, P_DATA_BITS + P_SQN_BITS);
+    if (m_EDC->check(packet, P_DATA_BITS + P_SQN_BITS) < 0) {
+        // invalid
+        return -1;
+    }
 
     // check sqn
     // TODO: check it!
+    int sqn_pack = 0;
+    for (int i = 0; i < P_SQN_BITS; i++) {
+        sqn_pack |= (packet[P_DATA_BITS + i] << i);
+    }
 
-    // check if
+    if (sqn_pack != sqn)
+        return -2;
+
+    return 0;
     //m_log->debug("P: 0x{0:2x} 0x{1:2x} 0x{2:2x}", packet[0], packet[1], packet[2]);
     //m_log->debug("Berger: 0x{0:2x} 0x{1:2x}", berger_pack, berger_calc);
-}
-
-int PacketManager::calcBytesPerPacket() {
-    int packetSizeInBits = getPacketSizeInBits();
-    return (int) 1 + (packetSizeInBits - 1) / 8;
 }
 
 int PacketManager::getMaxSqn() {
@@ -341,4 +344,30 @@ int PacketManager::getMaxSqn() {
 
 int PacketManager::getPacketSizeInBits() {
     return P_DATA_BITS + P_SQN_BITS + m_EDC->calcOutputSize(P_DATA_BITS + P_SQN_BITS);
+}
+
+void PacketManager::printInfo() {
+    int sqn_bits = P_SQN_BITS;
+    int data_bits = P_DATA_BITS;
+
+    m_log->debug("===== REQUEST =====");
+    m_log->debug("= SQN: {0:2}bits => max sqn: {1}", sqn_bits, getMaxSqn());
+    m_log->debug("= Encoded: {0:2}bits", m_ECC->getEncodedSize());
+    m_log->debug("===================");
+    m_log->debug("");
+    m_log->debug("====== PACKET ======");
+    m_log->debug("= DATA: {0:2}bit", data_bits);
+    m_log->debug("= SQN : {0:2}bit", sqn_bits);
+    m_log->debug("= EDC : {0:2}bit", m_EDC->calcOutputSize(P_DATA_BITS + P_SQN_BITS));
+    m_log->debug("====================");
+}
+
+void PacketManager::wait(int cycleCount) {
+    // TODO: get cycletime from sensor
+    struct timespec req, rem;
+
+    req.tv_sec = 0;
+    req.tv_nsec = MAXDELAY / 2 * cycleCount; // 80ms per cycle
+
+    nanosleep(&req, &rem);
 }

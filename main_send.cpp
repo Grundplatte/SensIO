@@ -27,7 +27,7 @@ int main() {
     log->info("Sender started. Waiting for Request");
 
     byte data[21] = "TESTaTESTbTESTcTESTd";
-    std::vector<std::vector<bit> > packets;
+    std::vector<std::vector<bit_t> > packets;
     byte sqn, sqnHad;
     int result;
 
@@ -37,6 +37,8 @@ int main() {
 
     int packetSqn = -1;
     int modSqn = ps->getMaxSqn();
+
+    ps->printInfo();
     ps->pack(data, 20, packets);
 
     while(1) {
@@ -57,18 +59,23 @@ int main() {
             case CHECK_FOR_SQN:
                 result = ps->checkForRequest(&sqnHad);
 
-                if (result == -2)
+                if (result == -2) {
                     state = SEND_PACKET;
+                    ps->wait(1);
+                }
                 else if (result == 0)
                     state = DECODE_SQN;
 
                 break;
 
             case DECODE_SQN:
-                result = ecc->decode(&sqnHad, 8, &sqn);
+                result = ecc->check(&sqnHad, 7);
+                ecc->decode(&sqnHad, 8, &sqn);
 
-                if (result < 0)
+                if (result < 0) {
+                    log->warn("SQN not valid, check again.");
                     state = CHECK_FOR_SQN;
+                }
                 else if (sqn == (packetSqn - 1) % modSqn) // stop condition
                     state = STOP;
                 else if (sqn == (packetSqn) % modSqn) {

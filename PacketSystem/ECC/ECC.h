@@ -29,6 +29,8 @@ public:
      **/
     virtual int decode(byte *input, int length, byte *output) = 0;
 
+    virtual int check(byte *input, int length) = 0;
+
     virtual int getEncodedSize() = 0;
 
 protected:

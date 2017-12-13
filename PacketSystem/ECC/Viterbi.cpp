@@ -277,7 +277,7 @@ vector<byte> Viterbi::decode(vector<byte> input) {
 	{
         tempVec = vector<byte>();
 
-        vector<bit> inputVerification(error_metric.size());
+        vector<bit_t> inputVerification(error_metric.size());
 
 		for (size_t j = 0; j < states.size(); j++)
 		{
