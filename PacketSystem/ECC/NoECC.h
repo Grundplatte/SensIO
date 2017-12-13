@@ -14,6 +14,8 @@ class NoECC : public ECC {
     int encode(byte *input, int length, byte *output) override;
     int decode(byte *input, int length, byte *output) override;
 
+    int check(byte *input, int length) override;
+
 public:
     int getEncodedSize() override;
 };

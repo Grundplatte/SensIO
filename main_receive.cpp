@@ -25,14 +25,15 @@ int main() {
 
     log->info("Receiver started.");
 
-    byte data[20];
-    std::vector<bit> packet;
-
-    int result;
     PacketManager *ps = new PacketManager();
+    std::vector<std::vector<bit_t> > packets;
+    std::vector<bit_t> packet;
+    int result;
 
     State state = REQUEST;
     int i = 0;
+
+    ps->printInfo();
 
     while (1) {
         switch (state) {
@@ -54,10 +55,12 @@ int main() {
                         state = STOP;
                     else
                         state = REQUEST;
-                } else if (result == -1)
+                } else if (result == -1) {
                     state = RECEIVE;
-                else if (result == -2)
+                    ps->wait(1);
+                } else if (result == -2) {
                     state = REQUEST;
+                }
                 else
                     state = ERROR;
 

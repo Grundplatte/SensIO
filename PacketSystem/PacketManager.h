@@ -15,7 +15,7 @@
 #include "ECC/ECC.h"
 #include "EDC/EDC.h"
 
-#define MAXDELAY 200 // ms
+#define MAXDELAY 80 // ms (1cycle)
 
 namespace spd = spdlog;
 
@@ -31,6 +31,11 @@ public:
      **/
     int waitForRequest(byte *sqnHad);
 
+    /**
+     * Check if someone requests a packet (waits for a maximum of XX cycles)
+     * @param sqnHad: Hadamard encoded sequence number
+     * @return: TODO: dummy
+     **/
     int checkForRequest(byte *sqnHad);
 
     /**
@@ -45,7 +50,7 @@ public:
      * @param packet: packet to send
      * @return: 0 on success, -1 on error
      **/
-    int send(std::vector<bit> packet);
+    int send(std::vector<bit_t> packet);
 
     /**
      * Receive a packet and check its sequence number
@@ -53,7 +58,7 @@ public:
      * @param sqn: sequence number
      * @return: 0 on success, -1 on timeout (no data), -2 on timeout (not enough data),
      **/
-    int receive(std::vector<bit> &packet, unsigned int sqn);
+    int receive(std::vector<bit_t> &packet, unsigned int sqn);
 
     /**
      * Unpacks a packet-stream (must be a valid packet)
@@ -64,9 +69,9 @@ public:
      * @return: output length in bytes
      **/
 // TODO: change to bitset
-    int unpack(std::vector<std::vector<bit> > packets, byte **output);
+    int unpack(std::vector<std::vector<bit_t> > packets, byte **output);
 
-    int unpack(std::vector<std::vector<bit> > packets, std::vector<bit> &output);
+    int unpack(std::vector<std::vector<bit_t> > packets, std::vector<bit_t> &output);
 
     /**
      * Packs data into a packet-stream
@@ -75,32 +80,27 @@ public:
      * @param output: packet buffer
      * @return: number of packets
      **/
-    int pack(const byte *data, unsigned int length, std::vector<std::vector<bit> > &output);
+    int pack(const byte *data, unsigned int length, std::vector<std::vector<bit_t> > &output);
 
-    int pack(std::vector<bit> data, unsigned int length, std::vector<std::vector<bit> > &output);
+    int pack(std::vector<bit_t> data, std::vector<std::vector<bit_t> > &output);
 
-    /**
-     * Calculates the packet size in bytes
-     * @return: packet size in bytes
-     **/
-    int calcBytesPerPacket();
+    void printInfo();
 
     int getMaxSqn();
 
+    void wait(int cycleCount);
+
 private:
     // maximum of 15 bits supported for berger codes
-    static const unsigned int P_DATA_BITS = 12;
+    static const unsigned int P_DATA_BITS = 15;
     static const unsigned int P_SQN_BITS = 3;
 
-    int check(std::vector<bit> packet, unsigned int sqn);
-
-    int getPacketSizeInBits();
-
     ECC *m_ECC;
-    int ECC_bitcount;
     EDC *m_EDC;
-    int EDC_bitcount;
-
     Sensor *m_sens;
     std::shared_ptr<spd::logger> m_log;
+
+    int check(std::vector<bit_t> packet, int sqn);
+
+    int getPacketSizeInBits();
 };

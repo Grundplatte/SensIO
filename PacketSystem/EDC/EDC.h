@@ -18,7 +18,7 @@ public:
      * @param output: edc
      * @return: output length in bits
      **/
-    virtual int generate(std::vector<bit> input, std::vector<bit> &output) = 0;
+    virtual int generate(std::vector<bit_t> input, std::vector<bit_t> &output) = 0;
 
     /**
      * Validate the payload + error detection code
@@ -26,7 +26,7 @@ public:
      * @param length: input length in bits
      * @return: valid (0) or invalid(-1)
      **/
-    virtual int check(std::vector<bit> input, int datasize) = 0;
+    virtual int check(std::vector<bit_t> input, int datasize) = 0;
 
     /**
      * Calculate the size of the output code in bits

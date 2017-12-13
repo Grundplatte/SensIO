@@ -68,6 +68,8 @@ int Hadamard::decode(byte *input, int length, byte *output)
         }
     }
 
+    m_log->trace("Hadamard decoded: {0x:} => {1:x}", input, output);
+
     return 3;
 }
 
@@ -90,4 +92,12 @@ int Hadamard::calcHamming(byte input1, byte input2)
 int Hadamard::getEncodedSize() {
     return 7;
 
+}
+
+int Hadamard::check(byte *input, int length) {
+    for (int i = 0; i < 8; i++) {
+        if (memcmp(input, H + i, 1) == 0)
+            return 0;
+    }
+    return -1;
 }
