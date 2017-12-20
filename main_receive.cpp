@@ -14,16 +14,29 @@ enum State {
     ERROR
 };
 
-int main() {
+int main(int argc, char *argv[]) {
 
     std::shared_ptr<spd::logger> log;
     log = spd::stdout_color_mt("main");
     spd::set_pattern("[%M:%S.%e] [%l] [%n] %v");
 
     /*** SET DEBUG LEVEL ***/
-    spd::set_level(spd::level::debug);
+    int c;
+    spd::set_level(spd::level::info);
+    while ((c = getopt(argc, argv, "dt")) != -1)
+        switch (c) {
+            case 'd':
+                spd::set_level(spd::level::debug);
+                break;
+            case 't':
+                spd::set_level(spd::level::trace);
+                break;
+            default:
+                abort();
+        }
 
     log->info("Receiver started.");
+    byte data[21] = "TESTaTESTbTESTcTESTd";
 
     PacketManager *ps = new PacketManager();
     std::vector<std::vector<bit_t> > packets;
@@ -44,14 +57,17 @@ int main() {
 
             case REQUEST:
                 ps->request(i);
+                state = RECEIVE;
+                break;
 
             case RECEIVE:
                 result = ps->receive(packet, i);
 
                 // transition
                 if (result == 0) {
+                    packets.push_back(packet);
                     i++;
-                    if (i > 2)
+                    if (i > 5) // 6 packets
                         state = STOP;
                     else
                         state = REQUEST;
@@ -69,6 +85,12 @@ int main() {
             case STOP:
                 log->info("Done. Stopping.");
                 ps->request(i - 2);
+
+                byte *output;
+                ps->unpack(packets, &output);
+                log->info("Unpacked: {}", output);
+                free(output);
+
                 exit(0);
                 break;
 

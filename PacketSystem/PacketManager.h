@@ -15,7 +15,7 @@
 #include "ECC/ECC.h"
 #include "EDC/EDC.h"
 
-#define MAXDELAY 80 // ms (1cycle)
+#define MAXDELAY_MS 80 // ms (1cycle)
 
 namespace spd = spdlog;
 
@@ -92,8 +92,9 @@ public:
 
 private:
     // maximum of 15 bits supported for berger codes
-    static const unsigned int P_DATA_BITS = 15;
+    static const unsigned int P_DATA_BITS = 28;
     static const unsigned int P_SQN_BITS = 3;
+    static const unsigned int P_MAXDELAY = (MAXDELAY_MS % 1000) * 1000000;
 
     ECC *m_ECC;
     EDC *m_EDC;
