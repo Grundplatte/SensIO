@@ -34,7 +34,6 @@ public:
 
     int toggleOnOff(bit_t onOff) override;
 
-    // TODO: export to midlayer
     int waitForSensReady() override;
 
     int sendBit(bit_t bit) override;

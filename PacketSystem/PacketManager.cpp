@@ -1,5 +1,7 @@
 #include <cmath>
 #include <utility>
+#include <sstream>
+#include <iostream>
 #include "PacketManager.h"
 #include "ECC/Hadamard.h"
 #include "EDC/Berger.h"
@@ -56,7 +58,7 @@ int PacketManager::waitForRequest(byte *sqnHad) {
             }
 
             // timeout > delay ms (only relevant in transmission has already started)
-            if (i != 0 && accum > (MAXDELAY % 1000) * 1000000) {
+            if (i != 0 && accum > P_MAXDELAY) {
                 m_log->warn("[D] Timeout while receiving a sequence number ({0} bits)", i);
                 return -2;
             }
@@ -96,7 +98,7 @@ int PacketManager::checkForRequest(byte *sqnHad) {
             }
 
             // timeout > delay ms (only relevant in transmission has already started)
-            if (accum > (MAXDELAY % 1000) * 1000000) {
+            if (accum > P_MAXDELAY) {
                 if (i == 0) {
                     m_log->warn("Timeout while waiting for a sequence number");
                     return -2;
@@ -163,7 +165,8 @@ int PacketManager::pack(const byte *data, unsigned int length, std::vector<std::
     // convert byte data to bits
     for (int i = 0; i < length; i++) {
         for (int l = 0; l < 8; l++) {
-            data_bit.push_back((data[i] & (1 << l)));
+            data_bit.push_back(((data[i] & (1 << l)) >> l));
+            m_log->trace("Data bit {}: {}", i * 8 + l, data_bit[i * 8 + l]);
         }
     }
 
@@ -223,13 +226,15 @@ int PacketManager::unpack(std::vector<std::vector<bit_t> > packets, byte **outpu
     unpack(std::move(packets), output_bit);
 
     size_t bytes = 1 + (output_bit.size() - 1) / 8;
-    (*output) = (byte *) malloc(bytes);
+    (*output) = (byte *) malloc(bytes + 1);
+    memset(*output, 0, bytes + 1);
 
     // FIXME: put in warning that other people will understand
     m_log->warn("Data not byte sized.");
 
     for (int i = 0; i < output_bit.size(); i++) {
-        (*output)[i / 8] |= (1 << (i % 8));
+        if (output_bit[i])
+            (*output)[i / 8] |= (1 << (i % 8));
     }
 }
 
@@ -238,9 +243,10 @@ int PacketManager::unpack(std::vector<std::vector<bit_t> > packets, std::vector<
 
     output.clear();
 
-    for (auto &packet : packets) {
+    for (int i = 0; i < packets.size(); i++) {
         for (int l = 0; l < P_DATA_BITS; l++) {
-            output.push_back(packet[l]);
+            output.push_back(packets[i][l]);
+            m_log->trace("Data bit {}: {}", i * P_DATA_BITS + l, packets[i][l]);
         }
     }
 
@@ -251,7 +257,7 @@ int PacketManager::unpack(std::vector<std::vector<bit_t> > packets, std::vector<
 int PacketManager::send(std::vector<bit_t> packet) {
     struct timespec req, rem;
     req.tv_sec = 0;
-    req.tv_nsec = 10000000; // 100ms TODO: change to smaller value
+    req.tv_nsec = 10000000; // 10ms
 
     m_sens->waitForSensReady();
     nanosleep(&req, &rem);
@@ -264,6 +270,18 @@ int PacketManager::send(std::vector<bit_t> packet) {
         m_sens->sendBit(packet[i]);
     }
 
+    // debug log
+    if (m_log->should_log(spd::level::debug)) {
+        std::stringstream temp;
+        for (int i = 0; i < packet.size(); i++) {
+            if (packet[i])
+                temp << "1";
+            else
+                temp << "0";
+        }
+
+        m_log->debug("Packet sent: {0:s}", temp.str());
+    }
     return 0;
 }
 
@@ -294,7 +312,7 @@ int PacketManager::receive(std::vector<bit_t> &packet, unsigned int sqn) {
             }
 
             // timeout > delay ms
-            if (accum > (MAXDELAY % 1000) * 1000000) {
+            if (accum > P_MAXDELAY) {
                 if (i == 0) {
                     m_log->warn("Sender didnt start the transmission");
                     return -2; // sender didnt start the transmission
@@ -312,6 +330,19 @@ int PacketManager::receive(std::vector<bit_t> &packet, unsigned int sqn) {
         }
     }
 
+    // debug log
+    if (m_log->should_log(spd::level::debug)) {
+        std::stringstream temp;
+        for (int i = 0; i < packet.size(); i++) {
+            if (packet[i])
+                temp << "1";
+            else
+                temp << "0";
+        }
+
+        m_log->debug("Packet received: {}", temp.str());
+    }
+
     // check packet, if packet is ok return 0, else return -1
     return check(packet, sqn);
 }
@@ -324,7 +355,6 @@ int PacketManager::check(std::vector<bit_t> packet, int sqn) {
     }
 
     // check sqn
-    // TODO: check it!
     int sqn_pack = 0;
     for (int i = 0; i < P_SQN_BITS; i++) {
         sqn_pack |= (packet[P_DATA_BITS + i] << i);
@@ -360,6 +390,7 @@ void PacketManager::printInfo() {
     m_log->debug("= SQN : {0:2}bit", sqn_bits);
     m_log->debug("= EDC : {0:2}bit", m_EDC->calcOutputSize(P_DATA_BITS + P_SQN_BITS));
     m_log->debug("====================");
+    m_log->debug("");
 }
 
 void PacketManager::wait(int cycleCount) {
@@ -367,7 +398,7 @@ void PacketManager::wait(int cycleCount) {
     struct timespec req, rem;
 
     req.tv_sec = 0;
-    req.tv_nsec = MAXDELAY / 2 * cycleCount; // 80ms per cycle
+    req.tv_nsec = MAXDELAY_MS / 2 * cycleCount; // 80ms per cycle
 
     nanosleep(&req, &rem);
 }

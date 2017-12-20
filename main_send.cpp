@@ -16,13 +16,25 @@ enum State {
     ERROR
 };
 
-int main() {
+int main(int argc, char *argv[]) {
     std::shared_ptr<spd::logger> log;
     log = spd::stdout_color_mt("main");
     spd::set_pattern("[%M:%S.%e] [%l] [%n] %v");
 
     /*** SET DEBUG LEVEL ***/
-    spd::set_level(spd::level::debug);
+    int c;
+    spd::set_level(spd::level::info);
+    while ((c = getopt(argc, argv, "dt")) != -1)
+        switch (c) {
+            case 'd':
+                spd::set_level(spd::level::debug);
+                break;
+            case 't':
+                spd::set_level(spd::level::trace);
+                break;
+            default:
+                abort();
+        }
 
     log->info("Sender started. Waiting for Request");
 
