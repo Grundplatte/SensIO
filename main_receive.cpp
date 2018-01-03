@@ -39,8 +39,8 @@ int main(int argc, char *argv[]) {
     byte data[21] = "TESTaTESTbTESTcTESTd";
 
     PacketManager *ps = new PacketManager();
-    std::vector<std::vector<bit_t> > packets;
-    std::vector<bit_t> packet;
+    std::vector<Packet> packets;
+    Packet packet;
     int result;
 
     State state = REQUEST;
@@ -67,7 +67,7 @@ int main(int argc, char *argv[]) {
                 if (result == 0) {
                     packets.push_back(packet);
                     i++;
-                    if (i > 5) // 6 packets
+                    if (packet.getCommand() == Packet::CMD_STOP)
                         state = STOP;
                     else
                         state = REQUEST;

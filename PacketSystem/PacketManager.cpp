@@ -127,7 +127,7 @@ int PacketManager::request(unsigned int sqn) {
     int i, hadBitSize, sqn_bits;
     struct timespec req, rem;
     byte sqnByte, sqnHad;
-    unsigned int modSqn = (unsigned int) getMaxSqn() + 1;
+    unsigned int modSqn = (unsigned int) MAX_SQN + 1;
 
     sqn_bits = P_SQN_BITS;
     req.tv_sec = 0;
@@ -155,7 +155,7 @@ int PacketManager::request(unsigned int sqn) {
     return 0;
 }
 
-int PacketManager::pack(const byte *data, unsigned int length, std::vector<std::vector<bit_t> > &output) {
+int PacketManager::pack(const byte *data, unsigned int length, std::vector<Packet> &output) {
 
     if (length == 0)
         return -1;
@@ -174,54 +174,33 @@ int PacketManager::pack(const byte *data, unsigned int length, std::vector<std::
 }
 // send one packet (12bit data, 3bit sqn, 4bit edc = 19bit)
 // memory is allocated inside the function, must be freed by caller after use
-int PacketManager::pack(std::vector<bit_t> data, std::vector<std::vector<bit_t> > &output)
+int PacketManager::pack(std::vector<bit_t> data, std::vector<Packet> &output)
 {
     output.clear();
-
-    int modSqn = getMaxSqn() + 1;
 
     m_log->debug("Packing {0} bit", data.size());
 
     // split into P_DATA_BITS bit packets
-    int global_i = 0;
     int packet_sqn = 0;
-    while (global_i < data.size()) {
-        std::vector<bit_t> temp;
-        std::vector<bit_t> temp_enc;
-
-        // data bits
-        for (int local_i = 0; local_i < P_DATA_BITS; local_i++) {
-            temp.push_back(data[global_i]);
-            global_i++;
-
-            // fill last packet with zeros
-            // TODO: better solution
-            if (global_i >= data.size()) {
-                int missing = P_DATA_BITS - temp.size();
-                for (int i = 0; i < missing; i++) {
-                    temp.push_back(false);
-                }
-                break;
-            }
-        }
-
-        // add sqn bits
-        for (int local_i = 0; local_i < P_SQN_BITS; local_i++) {
-            temp.push_back((bit_t) ((packet_sqn % modSqn) & (1 << local_i)));
-        }
-        packet_sqn++;
-
-        // add EDC bits
-        m_EDC->generate(temp, temp_enc);
-
-        // packet complete => add to output array
-        output.push_back(temp_enc);
+    int global_i = 0;
+    for (global_i = 0; global_i + P_DATA_BITS < data.size(); global_i += P_DATA_BITS) {
+        std::vector<bit_t> packetdata(data.begin() + global_i, data.begin() + global_i + P_DATA_BITS);
+        Packet tmp = Packet(packetdata, packet_sqn++);
+        output.push_back(tmp);
     }
+    // last packet may be smaller
+    if (global_i < data.size() - 1) {
+        std::vector<bit_t> packetdata(data.begin() + global_i, data.end());
+        Packet tmp = Packet(packetdata, packet_sqn++);
+        output.push_back(tmp);
+    }
+
+    insertCommandPacket(output, Packet::CMD_STOP, packet_sqn);
 
     m_log->debug("Got {0} packets with {1} bit each", output.size(), output.front().size());
 }
 
-int PacketManager::unpack(std::vector<std::vector<bit_t> > packets, byte **output) {
+int PacketManager::unpack(std::vector<Packet> packets, byte **output) {
     std::vector<bit_t> output_bit;
     unpack(std::move(packets), output_bit);
 
@@ -239,22 +218,20 @@ int PacketManager::unpack(std::vector<std::vector<bit_t> > packets, byte **outpu
 }
 
 // Use PacketManager::check() to verify the integrity of the packets before using this function
-int PacketManager::unpack(std::vector<std::vector<bit_t> > packets, std::vector<bit_t> &output) {
+int PacketManager::unpack(std::vector<Packet> packets, std::vector<bit_t> &output) {
 
     output.clear();
 
     for (int i = 0; i < packets.size(); i++) {
-        for (int l = 0; l < P_DATA_BITS; l++) {
-            output.push_back(packets[i][l]);
-            m_log->trace("Data bit {}: {}", i * P_DATA_BITS + l, packets[i][l]);
-        }
+        std::vector<bit_t> tmp(packets[i].getData());
+        output.insert(output.end(), tmp.begin(), tmp.end());
     }
 
     return output.size();
 }
 
 // send packet
-int PacketManager::send(std::vector<bit_t> packet) {
+int PacketManager::send(Packet packet) {
     struct timespec req, rem;
     req.tv_sec = 0;
     req.tv_nsec = 10000000; // 10ms
@@ -271,29 +248,18 @@ int PacketManager::send(std::vector<bit_t> packet) {
     }
 
     // debug log
-    if (m_log->should_log(spd::level::debug)) {
-        std::stringstream temp;
-        for (int i = 0; i < packet.size(); i++) {
-            if (packet[i])
-                temp << "1";
-            else
-                temp << "0";
-        }
-
-        m_log->debug("Packet sent: {0:s}", temp.str());
-    }
+    packet.printContents();
     return 0;
 }
 
-int PacketManager::receive(std::vector<bit_t> &packet, unsigned int sqn) {
-    int bit;
+int PacketManager::receive(Packet &packet, int sqn) {
+    int bit, type;
     struct timespec start, stop;
     double accum;
-    size_t packetBitSize = P_DATA_BITS + P_SQN_BITS + m_EDC->calcOutputSize(P_DATA_BITS + P_SQN_BITS);
+    size_t packetBitSize = 1 + P_DATA_BITS + P_SQN_BITS + m_EDC->calcOutputSize(P_DATA_BITS + P_SQN_BITS + 1);
 
     // clean up
-    packet.clear();
-
+    std::vector<bit_t> tmp;
     for (int i = 0; i < packetBitSize; i++) {
         m_sens->waitForSensReady();
         clock_gettime(CLOCK_REALTIME, &start);
@@ -324,56 +290,37 @@ int PacketManager::receive(std::vector<bit_t> &packet, unsigned int sqn) {
         } while (bit < 0);
 
         if (bit) {
-            packet.push_back(true);
+            if (tmp.empty()) {
+                type = Packet::TYPE_CMD;
+                packetBitSize = 1 + P_CMD_BITS + P_SQN_BITS + m_EDC->calcOutputSize(P_CMD_BITS + P_SQN_BITS + 1);
+            }
+
+            tmp.push_back(true);
         } else {
-            packet.push_back(false);
+            if (tmp.empty())
+                type = Packet::TYPE_DATA;
+
+            tmp.push_back(false);
         }
     }
+
+    packet.fromBits(tmp);
 
     // debug log
-    if (m_log->should_log(spd::level::debug)) {
-        std::stringstream temp;
-        for (int i = 0; i < packet.size(); i++) {
-            if (packet[i])
-                temp << "1";
-            else
-                temp << "0";
-        }
-
-        m_log->debug("Packet received: {}", temp.str());
-    }
+    packet.printContents();
 
     // check packet, if packet is ok return 0, else return -1
     return check(packet, sqn);
 }
 
-int PacketManager::check(std::vector<bit_t> packet, int sqn) {
-    // check edc
-    if (m_EDC->check(packet, P_DATA_BITS + P_SQN_BITS) < 0) {
-        // invalid
-        return -1;
+int PacketManager::check(Packet packet, int sqn) {
+    // check in main?
+    if (packet.isValid()) { //} && packet.hasSqn(sqn)){
+        m_log->debug("Packet ok");
+        return 0;
     }
 
-    // check sqn
-    int sqn_pack = 0;
-    for (int i = 0; i < P_SQN_BITS; i++) {
-        sqn_pack |= (packet[P_DATA_BITS + i] << i);
-    }
-
-    if (sqn_pack != sqn)
-        return -2;
-
-    return 0;
-    //m_log->debug("P: 0x{0:2x} 0x{1:2x} 0x{2:2x}", packet[0], packet[1], packet[2]);
-    //m_log->debug("Berger: 0x{0:2x} 0x{1:2x}", berger_pack, berger_calc);
-}
-
-int PacketManager::getMaxSqn() {
-    return (int) pow(2, P_SQN_BITS) - 1;
-}
-
-int PacketManager::getPacketSizeInBits() {
-    return P_DATA_BITS + P_SQN_BITS + m_EDC->calcOutputSize(P_DATA_BITS + P_SQN_BITS);
+    return -1;
 }
 
 void PacketManager::printInfo() {
@@ -381,7 +328,7 @@ void PacketManager::printInfo() {
     int data_bits = P_DATA_BITS;
 
     m_log->debug("===== REQUEST =====");
-    m_log->debug("= SQN: {0:2}bits => max sqn: {1}", sqn_bits, getMaxSqn());
+    m_log->debug("= SQN: {0:2}bits => max sqn: {1}", sqn_bits, MAX_SQN);
     m_log->debug("= Encoded: {0:2}bits", m_ECC->getEncodedSize());
     m_log->debug("===================");
     m_log->debug("");
@@ -401,4 +348,13 @@ void PacketManager::wait(int cycleCount) {
     req.tv_nsec = MAXDELAY_MS / 2 * cycleCount; // 80ms per cycle
 
     nanosleep(&req, &rem);
+}
+
+void PacketManager::insertCommandPacket(std::vector<Packet> &packets, int cmd, int sqn) {
+    for (int i = sqn; i < packets.size(); i++) {
+        packets[i].setSqn(i + 1);
+    }
+
+    Packet command = Packet(cmd, sqn);
+    packets.insert(packets.begin() + sqn, command);
 }

@@ -28,7 +28,7 @@ public:
      * length: input length in byte (TODO: change to bit)
      * return: valid (0) or invalid(-1)
      */
-    int check(std::vector<bit_t> input, int datasize) override;
+    int check(std::vector<bit_t> input, std::vector<bit_t> edc_in) override;
 
     int calcOutputSize(unsigned int length) override;
 

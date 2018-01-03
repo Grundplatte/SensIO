@@ -23,7 +23,7 @@ int NoEDC::generate(std::vector<bit_t> input, std::vector<bit_t> &output) {
     return output.size();
 }
 
-int NoEDC::check(std::vector<bit_t> input, int length) {
+int NoEDC::check(std::vector<bit_t> input, std::vector<bit_t> edc_in) {
     return 0;
 }
 
