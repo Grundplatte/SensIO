@@ -24,40 +24,35 @@ Berger::~Berger() {}
 int Berger::generate(std::vector<bit_t> input, std::vector<bit_t> &output) {
 
     int checkBits = calcOutputSize(input.size());
-    //if(checkBits > MAX_CHECK_LENGTH) {
-    //    m_log->error("Berger codes with more than {0} bit are not supported!", MAX_CHECK_LENGTH);
-    //    return -1;
-    //}
+
+    m_log->trace("Generating {0} checkbits.", checkBits);
 
     unsigned int count = 0;
-    for (unsigned int i = 0; i < input.size(); i++) {
-        if (input.at(i))
+    for (int i = 0; i < input.size(); i++) {
+        if (input[i])
             count++;
     }
 
-    output = input;
-    for (unsigned int i = 0; i < checkBits; i++) {
+    for (int i = 0; i < checkBits; i++) {
         output.push_back((bit_t) ((count & (1 << i)) >> i));
     }
 
     return checkBits;
 }
 
-int Berger::check(std::vector<bit_t> input, int datasize) {
-    // TODO: implement
-    std::vector<bit_t> input_data(input.begin(), input.begin() + datasize);
+int Berger::check(std::vector<bit_t> input, std::vector<bit_t> edc_in) {
     std::vector<bit_t> berger_calc;
 
     // generate reference berger code and confirm the bitsize of the error code
-    int checkBits = generate(input_data, berger_calc);
-    if (checkBits != input.size() - datasize) {
-        m_log->warn("Checkbits({0}) != {1}", checkBits, input.size() - datasize);
+    generate(input, berger_calc);
+    if (berger_calc.size() != edc_in.size()) {
+        m_log->warn("Checkbits: size not matching.");
         return -3;
     }
 
-    for (int i = datasize; i < input.size(); i++) {
-        if (input[i] != berger_calc[i]) {
-            m_log->warn("Check: input({0:x}), calc({1:x}), ind({2})", input[i], berger_calc[i],
+    for (int i = 0; i < edc_in.size(); i++) {
+        if (edc_in[i] != berger_calc[i]) {
+            m_log->warn("Bits don't match: input({0:x}), calc({1:x}), ind({2})", edc_in[i], berger_calc[i],
                         i);
             return -1;
         }

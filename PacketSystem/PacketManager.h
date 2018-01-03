@@ -14,8 +14,7 @@
 #include "../Defines.h"
 #include "ECC/ECC.h"
 #include "EDC/EDC.h"
-
-#define MAXDELAY_MS 80 // ms (1cycle)
+#include "Packet.h"
 
 namespace spd = spdlog;
 
@@ -50,7 +49,7 @@ public:
      * @param packet: packet to send
      * @return: 0 on success, -1 on error
      **/
-    int send(std::vector<bit_t> packet);
+    int send(Packet packet);
 
     /**
      * Receive a packet and check its sequence number
@@ -58,7 +57,7 @@ public:
      * @param sqn: sequence number
      * @return: 0 on success, -1 on timeout (no data), -2 on timeout (not enough data),
      **/
-    int receive(std::vector<bit_t> &packet, unsigned int sqn);
+    int receive(Packet &packet, int sqn);
 
     /**
      * Unpacks a packet-stream (must be a valid packet)
@@ -69,9 +68,9 @@ public:
      * @return: output length in bytes
      **/
 // TODO: change to bitset
-    int unpack(std::vector<std::vector<bit_t> > packets, byte **output);
+    int unpack(std::vector<Packet> packets, byte **output);
 
-    int unpack(std::vector<std::vector<bit_t> > packets, std::vector<bit_t> &output);
+    int unpack(std::vector<Packet> packets, std::vector<bit_t> &output);
 
     /**
      * Packs data into a packet-stream
@@ -80,28 +79,23 @@ public:
      * @param output: packet buffer
      * @return: number of packets
      **/
-    int pack(const byte *data, unsigned int length, std::vector<std::vector<bit_t> > &output);
+    int pack(const byte *data, unsigned int length, std::vector<Packet> &output);
 
-    int pack(std::vector<bit_t> data, std::vector<std::vector<bit_t> > &output);
+    int pack(std::vector<bit_t> data, std::vector<Packet> &output);
+
+    void insertCommandPacket(std::vector<Packet> &packets, int cmd, int sqn);
 
     void printInfo();
-
-    int getMaxSqn();
 
     void wait(int cycleCount);
 
 private:
     // maximum of 15 bits supported for berger codes
-    static const unsigned int P_DATA_BITS = 28;
-    static const unsigned int P_SQN_BITS = 3;
-    static const unsigned int P_MAXDELAY = (MAXDELAY_MS % 1000) * 1000000;
-
     ECC *m_ECC;
     EDC *m_EDC;
     Sensor *m_sens;
     std::shared_ptr<spd::logger> m_log;
 
-    int check(std::vector<bit_t> packet, int sqn);
 
-    int getPacketSizeInBits();
+    int check(Packet packet, int sqn);
 };

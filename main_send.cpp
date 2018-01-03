@@ -3,7 +3,6 @@
 #include "spdlog/spdlog.h"
 #include "PacketSystem/PacketManager.h"
 #include "PacketSystem/ECC/Hadamard.h"
-#include "PacketSystem/EDC/Berger.h"
 
 namespace spd = spdlog;
 
@@ -39,7 +38,7 @@ int main(int argc, char *argv[]) {
     log->info("Sender started. Waiting for Request");
 
     byte data[21] = "TESTaTESTbTESTcTESTd";
-    std::vector<std::vector<bit_t> > packets;
+    std::vector<Packet> packets;
     byte sqn, sqnHad;
     int result;
 
@@ -48,7 +47,7 @@ int main(int argc, char *argv[]) {
     State state = WAIT_FOR_SQN;
 
     int packetSqn = -1;
-    int modSqn = ps->getMaxSqn();
+    int modSqn = MAX_SQN + 1;
 
     ps->printInfo();
     ps->pack(data, 20, packets);

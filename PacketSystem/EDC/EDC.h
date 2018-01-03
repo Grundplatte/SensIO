@@ -22,11 +22,12 @@ public:
 
     /**
      * Validate the payload + error detection code
-     * @param input: payload + edc
+     * @param input: payload
+     * @param edc_in: received edc
      * @param length: input length in bits
      * @return: valid (0) or invalid(-1)
      **/
-    virtual int check(std::vector<bit_t> input, int datasize) = 0;
+    virtual int check(std::vector<bit_t> input, std::vector<bit_t> edc_in) = 0;
 
     /**
      * Calculate the size of the output code in bits

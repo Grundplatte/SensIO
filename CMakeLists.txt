@@ -6,7 +6,7 @@ find_package(Threads REQUIRED)
 set(CMAKE_CXX_STANDARD 11)
 
 # general stuff
-set(SOURCE_FILES_LIB PacketSystem/ECC/Viterbi.cpp Sensors/HTS221.cpp Sensors/HAL/I2C_HAL.cpp PacketSystem/PacketManager.cpp PacketSystem/ECC/Hadamard.cpp PacketSystem/EDC/Berger.cpp PacketSystem/ECC/NoECC.cpp PacketSystem/EDC/NoEDC.cpp)
+set(SOURCE_FILES_LIB PacketSystem/ECC/Viterbi.cpp Sensors/HTS221.cpp Sensors/HAL/I2C_HAL.cpp PacketSystem/PacketManager.cpp PacketSystem/ECC/Hadamard.cpp PacketSystem/EDC/Berger.cpp PacketSystem/ECC/NoECC.cpp PacketSystem/EDC/NoEDC.cpp PacketSystem/Packet.cpp PacketSystem/Packet.h)
 
 
 set(SOURCE_FILES_SENDER ${SOURCE_FILES_LIB} main_send.cpp)
