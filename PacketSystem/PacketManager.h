@@ -89,6 +89,10 @@ public:
 
     void wait(int cycleCount);
 
+    void scaleUp();
+
+    void scaleDown();
+
 private:
     // maximum of 15 bits supported for berger codes
     ECC *m_ECC;
@@ -97,5 +101,7 @@ private:
     std::shared_ptr<spd::logger> m_log;
 
 
+    int packet_scale = 2;
+    std::vector<int> packet_scales;
     int check(Packet packet, int sqn);
 };

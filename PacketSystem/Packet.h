@@ -15,13 +15,13 @@ namespace spd = spdlog;
 class Packet {
 public:
     // not used for now
-    static const int TYPE_DATA;
-    static const int TYPE_CMD;
+    static const int TYPE_DATA = 0;
+    static const int TYPE_CMD = 1;
 
-    static const int CMD_UP;
-    static const int CMD_DOWN;
-    static const int CMD_STOP;
-    static const int CMD_RES;
+    static const int CMD_UP = 0;
+    static const int CMD_DOWN = 1;
+    static const int CMD_STOP = 2;
+    static const int CMD_RES = 3;
 
     Packet(std::vector<bit_t> data, int sqn);
 

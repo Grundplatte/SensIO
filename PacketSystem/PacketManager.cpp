@@ -22,6 +22,8 @@ PacketManager::PacketManager() {
     if (!m_sens->isActive())
         m_sens->toggleOnOff(1);
 
+    packet_scales = {3, 7, 15, 31, 63};
+
     // <-- Log settings -->
     std::shared_ptr<spdlog::logger> log = spd::get("PMgr");
     m_log = log ? log : spd::stdout_color_mt("PMgr");
@@ -357,4 +359,14 @@ void PacketManager::insertCommandPacket(std::vector<Packet> &packets, int cmd, i
 
     Packet command = Packet(cmd, sqn);
     packets.insert(packets.begin() + sqn, command);
+}
+
+void PacketManager::scaleUp() {
+    if (packet_scale < packet_scales.size())
+        packet_scale++;
+}
+
+void PacketManager::scaleDown() {
+    if (packet_scale > 0)
+        packet_scale--;
 }

@@ -6,14 +6,6 @@
 #include "Packet.h"
 #include "EDC/Berger.h"
 
-const int Packet::TYPE_DATA = 0;
-const int Packet::TYPE_CMD = 1;
-
-const int Packet::CMD_UP = 0;
-const int Packet::CMD_DOWN = 1;
-const int Packet::CMD_STOP = 2;
-const int Packet::CMD_RES = 3;
-
 
 Packet::Packet() {
     std::shared_ptr<spdlog::logger> log = spd::get("Packet");
