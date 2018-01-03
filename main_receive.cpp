@@ -67,10 +67,21 @@ int main(int argc, char *argv[]) {
                 if (result == 0) {
                     packets.push_back(packet);
                     i++;
-                    if (packet.getCommand() == Packet::CMD_STOP)
-                        state = STOP;
-                    else
-                        state = REQUEST;
+                    switch (packet.getCommand()) {
+                        case Packet::CMD_UP:
+                            state = REQUEST;
+                            ps->scaleUp();
+                            break;
+                        case Packet::CMD_DOWN:
+                            state = REQUEST;
+                            ps->scaleDown();
+                            break;
+                        case Packet::CMD_STOP:
+                            state = STOP;
+                            break;
+                        default:
+                            state = REQUEST;
+                    }
                 } else if (result == -1) {
                     state = RECEIVE;
                     ps->wait(1);
