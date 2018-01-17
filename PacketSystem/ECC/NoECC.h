@@ -11,11 +11,14 @@ class NoECC : public ECC {
     NoECC();
 
     ~NoECC();
-    int encode(byte *input, int length, byte *output) override;
-    int decode(byte *input, int length, byte *output) override;
 
-    int check(byte *input, int length) override;
+    int encode(byte *input, size_t length, byte *output) override;
+
+    int decode(byte *input, size_t length, byte *output) override;
+
+    // only error detection
+    int check(byte *input, size_t length) override;
 
 public:
-    int getEncodedSize() override;
+    int getEncodedSize(size_t length) override;
 };

@@ -39,7 +39,7 @@ public:
 
     void toBits(std::vector<bit_t> &output);
 
-    void fromBits(std::vector<bit_t> input);
+    void fromBits(std::vector<bit_t> input, int scale);
 
     void setSqn(int new_sqn);
 

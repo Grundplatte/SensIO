@@ -42,6 +42,7 @@ int main(int argc, char *argv[]) {
     std::vector<Packet> packets;
     Packet packet;
     int result;
+    int scale = 2;
 
     State state = REQUEST;
     int i = 0;
@@ -61,7 +62,7 @@ int main(int argc, char *argv[]) {
                 break;
 
             case RECEIVE:
-                result = ps->receive(packet, i);
+                result = ps->receive(packet, i, scale);
 
                 // transition
                 if (result == 0) {
@@ -70,11 +71,13 @@ int main(int argc, char *argv[]) {
                     switch (packet.getCommand()) {
                         case Packet::CMD_UP:
                             state = REQUEST;
-                            ps->scaleUp();
+                            scale++;
+                            log->info("Scaling up to: {}", scale);
                             break;
                         case Packet::CMD_DOWN:
                             state = REQUEST;
-                            ps->scaleDown();
+                            scale--;
+                            log->info("Scaling down to: {}", scale);
                             break;
                         case Packet::CMD_STOP:
                             state = STOP;
