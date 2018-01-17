@@ -35,22 +35,27 @@ int main(int argc, char *argv[]) {
                 abort();
         }
 
-    log->info("Sender started. Waiting for Request");
+    log->info("Sender started.");
 
     byte data[21] = "TESTaTESTbTESTcTESTd";
-    std::vector<Packet> packets;
-    byte sqn, sqnHad;
+    Packet nextPacket;
+    byte sqnHad;
     int result;
+    int error_count = 0;
+    int success_count = 0;
 
-    PacketManager *ps = new PacketManager();
+    PacketManager ps = PacketManager();
+    PacketFactory factory = PacketFactory(data, 21);
+
     ECC *ecc = new Hadamard();
     State state = WAIT_FOR_SQN;
 
     int packetSqn = -1;
     int modSqn = MAX_SQN + 1;
 
-    ps->printInfo();
-    ps->pack(data, 20, packets);
+    //ps.printInfo();
+    //ps.pack(data, 20, packets);
+
 
     while(1) {
         switch (state) {
@@ -60,7 +65,7 @@ int main(int argc, char *argv[]) {
                 break;
 
             case WAIT_FOR_SQN:
-                result = ps->waitForRequest(&sqnHad);
+                result = ps.waitForRequest(&sqnHad);
 
                 if (result == 0)
                     state = DECODE_SQN;
@@ -68,11 +73,11 @@ int main(int argc, char *argv[]) {
                 break;
 
             case CHECK_FOR_SQN:
-                result = ps->checkForRequest(&sqnHad);
+                result = ps.checkForRequest(&sqnHad);
 
                 if (result == -2) {
                     state = SEND_PACKET;
-                    ps->wait(1);
+                    ps.wait(1); // TODO: ??
                 }
                 else if (result == 0)
                     state = DECODE_SQN;
@@ -80,36 +85,57 @@ int main(int argc, char *argv[]) {
                 break;
 
             case DECODE_SQN:
-                result = ecc->check(&sqnHad, 7);
-                ecc->decode(&sqnHad, 8, &sqn);
+                result = ps.checkRequest(&sqnHad);
+                //result = ecc->check(&sqnHad, 7);
+                //ecc->decode(&sqnHad, 8, &sqn);
 
                 if (result < 0) {
                     log->warn("SQN not valid, check again.");
                     state = CHECK_FOR_SQN;
-                }
-                else if (sqn == (packetSqn - 1) % modSqn) // stop condition
+                } else if (result == (packetSqn - 1) % modSqn) // stop condition
                     state = STOP;
-                else if (sqn == (packetSqn) % modSqn) {
+                else if (result == (packetSqn) % modSqn) {
                     log->warn("Receiver requested the same packet again.");
+                    if (!nextPacket.isCommand()) {
+                        // Packet may be too big, try scaling down
+                        error_count++;
+                        success_count = 0;
+                        if (factory.scaleDown() == 0) {
+                            factory.previous();
+                            factory.getCommandPacket(Packet::CMD_DOWN, packetSqn, nextPacket);
+                            log->info("Packet size reduced");
+                        }
+                    }
                     state = SEND_PACKET;
-                } else if (sqn == (packetSqn + 1) % modSqn) {
-                    packetSqn++;
+                } else if (result == (packetSqn + 1) % modSqn) {
+
+                    result = factory.getNextPacket(++packetSqn, nextPacket);
+                    if (result == -1) {
+                        // no packets left, send stop
+                        factory.getCommandPacket(Packet::CMD_STOP, packetSqn, nextPacket);
+                    }
+                    /*
+                    if(success_count++ == P_TEST_UPSCALE){
+                        success_count = 0;
+                        if(factory.scaleUp() == 0){
+                            factory.getCommandPacket(Packet::CMD_UP, packetSqn, nextPacket);
+                            log->info("Packet size increased");
+                        }
+                    }*/
+                    error_count = 0;
+
                     state = SEND_PACKET;
                 } else {
                     log->error("Receiver requested packet out of order!");
                     state = STOP;
                 }
 
-                // TODO: check sqn flow (newSqn = oldSqn+1)
-                // TODO: calculate real sqn (++)
-                // TODO: transmit next on +1, same sqn shouldnt happen but retransmit,
-                // ignore other sqn a few times, then error/restart depending on sqn
-
                 break;
 
             case SEND_PACKET:
                 log->info("Sending packet {0}", packetSqn);
-                ps->send(packets.at(packetSqn));
+                //ps.send(packets.at(packetSqn));
+                ps.send(nextPacket);
                 state = CHECK_FOR_SQN;
                 break;
 

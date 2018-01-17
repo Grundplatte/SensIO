@@ -15,6 +15,7 @@
 #include "ECC/ECC.h"
 #include "EDC/EDC.h"
 #include "Packet.h"
+#include "PacketFactory.h"
 
 namespace spd = spdlog;
 
@@ -44,6 +45,8 @@ public:
      **/
     int request(unsigned int sqn);
 
+    int checkRequest(byte *sqn_had);
+
     /**
      * Send a packet over the covert channel
      * @param packet: packet to send
@@ -57,7 +60,7 @@ public:
      * @param sqn: sequence number
      * @return: 0 on success, -1 on timeout (no data), -2 on timeout (not enough data),
      **/
-    int receive(Packet &packet, int sqn);
+    int receive(Packet &packet, int sqn, int scale);
 
     /**
      * Unpacks a packet-stream (must be a valid packet)
@@ -67,41 +70,21 @@ public:
      * @param output: buffer for the unpacked data
      * @return: output length in bytes
      **/
-// TODO: change to bitset
     int unpack(std::vector<Packet> packets, byte **output);
 
     int unpack(std::vector<Packet> packets, std::vector<bit_t> &output);
 
-    /**
-     * Packs data into a packet-stream
-     * @param data: input data buffer
-     * @param length: input length in bytes
-     * @param output: packet buffer
-     * @return: number of packets
-     **/
-    int pack(const byte *data, unsigned int length, std::vector<Packet> &output);
-
-    int pack(std::vector<bit_t> data, std::vector<Packet> &output);
-
-    void insertCommandPacket(std::vector<Packet> &packets, int cmd, int sqn);
-
     void printInfo();
 
-    void wait(int cycleCount);
-
-    void scaleUp();
-
-    void scaleDown();
+    void wait(int cycle_count);
 
 private:
-    // maximum of 15 bits supported for berger codes
     ECC *m_ECC;
     EDC *m_EDC;
     Sensor *m_sens;
     std::shared_ptr<spd::logger> m_log;
 
+    int scale;
 
-    int packet_scale = 2;
-    std::vector<int> packet_scales;
     int check(Packet packet, int sqn);
 };

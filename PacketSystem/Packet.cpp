@@ -18,11 +18,6 @@ Packet::Packet(std::vector<bit_t> data, int sqn) : data_bits(std::move(data)), s
     std::shared_ptr<spdlog::logger> log = spd::get("Packet");
     m_log = log ? log : spd::stdout_color_mt("Packet");
 
-    // if packet is smaller than packetsize, fill with zeros
-    while (data_bits.size() < P_DATA_BITS) {
-        data_bits.push_back(0);
-    }
-
     updateSQN();
     updateEDC();
 }
@@ -66,7 +61,7 @@ std::vector<bit_t> Packet::getData() {
     return data_bits;
 }
 
-void Packet::fromBits(std::vector<bit_t> input) {
+void Packet::fromBits(std::vector<bit_t> input, int scale) {
     type = input[0];
 
     data_bits.clear();
@@ -74,9 +69,10 @@ void Packet::fromBits(std::vector<bit_t> input) {
     edc_bits.clear();
 
     if (type == TYPE_DATA) {
-        data_bits.insert(data_bits.end(), input.begin() + 1, input.begin() + P_DATA_BITS + 1);
-        sqn_bits.insert(sqn_bits.end(), input.begin() + P_DATA_BITS + 1, input.begin() + P_DATA_BITS + P_SQN_BITS + 1);
-        edc_bits.insert(edc_bits.end(), input.begin() + P_DATA_BITS + P_SQN_BITS + 1, input.end());
+        data_bits.insert(data_bits.end(), input.begin() + 1, input.begin() + P_DATA_BITS[scale] + 1);
+        sqn_bits.insert(sqn_bits.end(), input.begin() + P_DATA_BITS[scale] + 1,
+                        input.begin() + P_DATA_BITS[scale] + P_SQN_BITS + 1);
+        edc_bits.insert(edc_bits.end(), input.begin() + P_DATA_BITS[scale] + P_SQN_BITS + 1, input.end());
     } else if (type == TYPE_CMD) {
         data_bits.insert(data_bits.end(), input.begin() + 1, input.begin() + P_CMD_BITS + 1);
         sqn_bits.insert(sqn_bits.end(), input.begin() + P_CMD_BITS + 1, input.begin() + P_CMD_BITS + P_SQN_BITS + 1);
@@ -171,6 +167,26 @@ void Packet::printContents() {
     temp.str("");
     for (int i = 0; i < data_bits.size(); i++) {
         temp << (data_bits[i] ? "1" : "0");
+    }
+    if (type == TYPE_CMD) {
+        int cmd = 0x00 | data_bits[0] | data_bits[1];
+        switch (cmd) {
+            case CMD_UP:
+                temp << " (CMD_UP)";
+                break;
+            case CMD_DOWN:
+                temp << " (CMD_DOWN)";
+                break;
+            case CMD_STOP:
+                temp << " (CMD_STOP)";
+                break;
+            case CMD_RES:
+                temp << " (CMD_RES)";
+                break;
+            default:
+                temp << " (unknown)";
+                break;
+        }
     }
     m_log->debug("= DATA: {0:s}", temp.str());
 

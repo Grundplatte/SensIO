@@ -18,7 +18,7 @@ public:
      * @param output: encoded payload
      * @return: output length in bit (-1 on error)
      **/
-    virtual int encode(byte *input, int length, byte *output) = 0;
+    virtual int encode(byte *input, size_t length, byte *output) = 0;
 
     /**
      * Try to decode the encoded payload
@@ -27,11 +27,11 @@ public:
      * @param output: decoded payload
      * @return: output length in bit (-1 on error)
      **/
-    virtual int decode(byte *input, int length, byte *output) = 0;
+    virtual int decode(byte *input, size_t length, byte *output) = 0;
 
-    virtual int check(byte *input, int length) = 0;
+    virtual int check(byte *input, size_t length) = 0;
 
-    virtual int getEncodedSize() = 0;
+    virtual int getEncodedSize(size_t) = 0;
 
 protected:
     std::shared_ptr<spd::logger> m_log;

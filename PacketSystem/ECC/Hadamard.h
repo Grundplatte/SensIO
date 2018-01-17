@@ -12,16 +12,20 @@ public:
 
     ~Hadamard();
 
-    int encode(byte *input, int length, byte *output) override;
-    int decode(byte *input, int length, byte *output) override;
+    int encode(byte *input, size_t length, byte *output) override;
 
-    int check(byte *input, int length) override;
+    int decode(byte *input, size_t length, byte *output) override;
 
-    int getEncodedSize() override;
+    int check(byte *input, size_t length) override;
+
+    int getEncodedSize(size_t length) override;
 
 private:
-    word G = 0b000011110011001101010101; // Generator matrix (as a vector)
-    byte H[8] = {0b00000000, 0b00001111, 0b00110011, 0b00111100,
+    // Hardcoded Hadamard codes
+    byte H2[2] = {0b00, 0b01};
+    byte H4[4] = {0b0000, 0b0011, 0b0101, 0b0110};
+    byte H8[8] = {0b00000000, 0b00001111, 0b00110011, 0b00111100,
                  0b01010101, 0b01011010, 0b01100110, 0b01101001};
+
     int calcHamming(byte in1, byte in2);
 };

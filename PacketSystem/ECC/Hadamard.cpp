@@ -18,50 +18,65 @@ Hadamard::~Hadamard() {}
 
 /*
  * Hadamard Code
- * generate 8bit code from 3bit sqn
+ * generate 2/4/8bit code from 1/2/3bit sqn
  */
 
-//uint8_t G = [0b00001111, 0b00110011, 0b01010101]; // Generator matrix for k=3
-// TODO: support variable input length (only 3->8 is supported for now)
-int Hadamard::encode(byte *input, int length, byte *output)
-{
-    if(length != 3)
-        return(-1);
+int Hadamard::encode(byte *input, size_t length, byte *output) {
+    int result;
 
-    // inflate => repeat every bit 8 times
-    int i;
-    word x = 0;
-    for(i=0; i<3; i++) {
-        if(*input & (1<<i))
-            x |= 0xFF;
-        x <<= 8;
+    switch (length) {
+        case 1:
+            *output = H2[*input & 0x03];
+            result = 2;
+            break;
+
+        case 2:
+            *output = H4[*input & 0x07];
+            result = 4;
+            break;
+
+        case 3:
+            *output = H8[*input & 0x0F];
+            result = 8;
+            break;
+
+        default:
+            result = -1;
+            m_log->debug("Encode: Wrong input length: {}", length);
     }
-    x >>= 8; // bad practice, but x is is big enough
 
-    // multiplication
-    unsigned int P = G & x;
-
-    // addition
-    *output = 0;
-    P ^= P>>16;
-    P ^= P>>8;
-    *output = P & 0xFF;
-
-    return 8;
+    return result;
 }
 
 // simple version of decoder
-// TODO: support variable input length (only 8->3 is supported for now)
-int Hadamard::decode(byte *input, int length, byte *output)
+int Hadamard::decode(byte *input, size_t length, byte *output)
 {
-    if(length != 8)
-        return(-1);
-
     unsigned int i;
-    int lowHam, ham;
-    lowHam = 1000;
-    for(i=0; i<8; i++) {
+    unsigned char *H;
+    int lowHam = 1000;
+    int ham = 0;
+
+    switch (length) {
+        case 2:
+            H = H2;
+            break;
+
+        case 4:
+            H = H4;
+            break;
+
+        case 8:
+            H = H8;
+            break;
+
+        default:
+            m_log->debug("Decode: Wrong input length: {}", length);
+            return -1;
+    }
+
+    for (i = 0; i < length; i++) {
         ham = calcHamming(*input, H[i]);
+
         if(ham < lowHam) {
             lowHam = ham;
             *output = i;
@@ -73,8 +88,7 @@ int Hadamard::decode(byte *input, int length, byte *output)
     return 3;
 }
 
-// TODO: move to helper class
-// TODO: support bigger data types / input data
+// TODO: support larger inputs
 int Hadamard::calcHamming(byte input1, byte input2)
 {
     unsigned int i;
@@ -88,16 +102,50 @@ int Hadamard::calcHamming(byte input1, byte input2)
     return ham;
 }
 
-// TODO: make dynamic
-int Hadamard::getEncodedSize() {
-    return 7;
+int Hadamard::getEncodedSize(size_t length) {
+    switch (length) {
+        case 1:
+            return 2;
 
+        case 2:
+            return 4;
+
+        case 3:
+            return 8;
+
+        default:
+            m_log->debug("GetSize: Wrong input length: {}", length);
+            return -1;
+    }
 }
 
-int Hadamard::check(byte *input, int length) {
-    for (int i = 0; i < 8; i++) {
-        if (memcmp(input, H + i, 1) == 0)
-            return 0;
+int Hadamard::check(byte *input, size_t length) {
+
+    unsigned char *H;
+    switch (length) {
+        case 2:
+            H = H2;
+            break;
+
+        case 4:
+            H = H4;
+            break;
+
+        case 8:
+            H = H8;
+            break;
+
+        default:
+            m_log->debug("Decode: Wrong input length: {}", length);
+            return -1;
     }
+
+    for (int i = 0; i < length; i++) {
+        if (memcmp(input, H + i, 1) == 0) {
+            m_log->debug("Found matching SQN: {}", i);
+            return i;
+        }
+    }
+
     return -1;
 }
