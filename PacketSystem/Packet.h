@@ -53,9 +53,11 @@ public:
 
 private:
     std::shared_ptr<spd::logger> m_log;
+
     std::vector<bit_t> data_bits;
     std::vector<bit_t> sqn_bits;
     std::vector<bit_t> edc_bits;
+
     int sqn;
     bit_t type;
 

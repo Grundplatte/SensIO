@@ -10,6 +10,7 @@ enum State {
     IDLE,
     REQUEST,
     RECEIVE,
+    RERECEIVE,
     STOP,
     ERROR
 };
@@ -62,36 +63,80 @@ int main(int argc, char *argv[]) {
                 break;
 
             case RECEIVE:
-                result = ps->receive(packet, i, scale);
+                result = ps->receive(packet, i, scale, CYCLE_DELAY);
 
                 // transition
                 if (result == 0) {
-                    packets.push_back(packet);
                     i++;
-                    switch (packet.getCommand()) {
-                        case Packet::CMD_UP:
-                            state = REQUEST;
-                            scale++;
-                            log->info("Scaling up to: {}", scale);
-                            break;
-                        case Packet::CMD_DOWN:
-                            state = REQUEST;
-                            scale--;
-                            log->info("Scaling down to: {}", scale);
-                            break;
-                        case Packet::CMD_STOP:
-                            state = STOP;
-                            break;
-                        default:
-                            state = REQUEST;
+                    if (packet.isCommand()) {
+                        switch (packet.getCommand()) {
+                            case Packet::CMD_UP:
+                                state = REQUEST;
+                                scale++;
+                                log->info("Scaling up to: {}", scale);
+                                break;
+                            case Packet::CMD_DOWN:
+                                state = REQUEST;
+                                scale--;
+                                log->info("Scaling down to: {}", scale);
+                                break;
+                            case Packet::CMD_STOP:
+                                state = STOP;
+                                break;
+                            default:
+                                state = REQUEST;
+                        }
+                    } else {
+                        packets.push_back(packet);
+                        state = REQUEST;
                     }
                 } else if (result == -1) {
-                    state = RECEIVE;
+                    state = RERECEIVE;
                     ps->wait(1);
                 } else if (result == -2) {
                     state = REQUEST;
+                    ps->wait(1);
                 }
                 else
+                    state = ERROR;
+
+                break;
+
+            case RERECEIVE:
+                result = ps->receive(packet, i, scale, CYCLE_DELAY * 2);
+
+                // transition
+                if (result == 0) {
+                    i++;
+                    if (packet.isCommand()) {
+                        switch (packet.getCommand()) {
+                            case Packet::CMD_UP:
+                                state = REQUEST;
+                                scale++;
+                                log->info("Scaling up to: {}", scale);
+                                break;
+                            case Packet::CMD_DOWN:
+                                state = REQUEST;
+                                scale--;
+                                log->info("Scaling down to: {}", scale);
+                                break;
+                            case Packet::CMD_STOP:
+                                state = STOP;
+                                break;
+                            default:
+                                state = REQUEST;
+                        }
+                    } else {
+                        packets.push_back(packet);
+                        state = REQUEST;
+                    }
+                } else if (result == -1) {
+                    state = RERECEIVE;
+                    ps->wait(1);
+                } else if (result == -2) {
+                    state = REQUEST;
+                    ps->wait(1);
+                } else
                     state = ERROR;
 
                 break;

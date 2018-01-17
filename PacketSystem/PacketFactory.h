@@ -41,7 +41,6 @@ private:
 
     // dynamic stuff
     int packet_scale = 2;
-    //int send_successful_before_upscale = 2; // TODO
 };
 
 

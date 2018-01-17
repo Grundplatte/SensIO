@@ -9,6 +9,7 @@ namespace spd = spdlog;
 enum State {
     WAIT_FOR_SQN,
     CHECK_FOR_SQN,
+    RECHECK_FOR_SQN,
     DECODE_SQN,
     SEND_PACKET,
     STOP,
@@ -73,13 +74,27 @@ int main(int argc, char *argv[]) {
                 break;
 
             case CHECK_FOR_SQN:
-                result = ps.checkForRequest(&sqnHad);
+                result = ps.checkForRequest(&sqnHad, CYCLE_DELAY);
 
                 if (result == -2) {
                     state = SEND_PACKET;
                     ps.wait(1); // TODO: ??
-                }
-                else if (result == 0)
+                } else if (result == -1) {
+                    state = RECHECK_FOR_SQN;
+                } else if (result == 0)
+                    state = DECODE_SQN;
+
+                break;
+
+            case RECHECK_FOR_SQN:
+                result = ps.checkForRequest(&sqnHad, CYCLE_DELAY * 2);
+
+                if (result == -2) {
+                    state = SEND_PACKET;
+                    ps.wait(1); // TODO: ??
+                } else if (result == -1) {
+                    state = RECHECK_FOR_SQN;
+                } else if (result == 0)
                     state = DECODE_SQN;
 
                 break;
@@ -113,15 +128,17 @@ int main(int argc, char *argv[]) {
                     if (result == -1) {
                         // no packets left, send stop
                         factory.getCommandPacket(Packet::CMD_STOP, packetSqn, nextPacket);
+                        break;
                     }
-                    /*
+
                     if(success_count++ == P_TEST_UPSCALE){
                         success_count = 0;
                         if(factory.scaleUp() == 0){
+                            factory.previous();
                             factory.getCommandPacket(Packet::CMD_UP, packetSqn, nextPacket);
                             log->info("Packet size increased");
                         }
-                    }*/
+                    }
                     error_count = 0;
 
                     state = SEND_PACKET;
@@ -134,7 +151,6 @@ int main(int argc, char *argv[]) {
 
             case SEND_PACKET:
                 log->info("Sending packet {0}", packetSqn);
-                //ps.send(packets.at(packetSqn));
                 ps.send(nextPacket);
                 state = CHECK_FOR_SQN;
                 break;
