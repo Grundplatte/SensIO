@@ -36,7 +36,7 @@ public:
      * @param sqnHad: Hadamard encoded sequence number
      * @return: TODO: dummy
      **/
-    int checkForRequest(byte *sqnHad);
+    int checkForRequest(byte *sqnHad, int timeout);
 
     /**
      * Request a packet using the sequence number sqn
@@ -60,7 +60,7 @@ public:
      * @param sqn: sequence number
      * @return: 0 on success, -1 on timeout (no data), -2 on timeout (not enough data),
      **/
-    int receive(Packet &packet, int sqn, int scale);
+    int receive(Packet &packet, int sqn, int scale, int timeout);
 
     /**
      * Unpacks a packet-stream (must be a valid packet)

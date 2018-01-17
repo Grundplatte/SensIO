@@ -60,7 +60,7 @@ int PacketManager::waitForRequest(byte *sqnHad) {
             }
 
             // timeout > delay ms (only relevant in transmission has already started)
-            if (i != 0 && accum > P_MAXDELAY) {
+            if (i != 0 && accum > CYCLE_DELAY) {
                 m_log->warn("[D] Timeout while receiving a sequence number ({0} bits)", i);
                 return -2;
             }
@@ -76,7 +76,7 @@ int PacketManager::waitForRequest(byte *sqnHad) {
     return 0;
 }
 
-int PacketManager::checkForRequest(byte *sqnHad) {
+int PacketManager::checkForRequest(byte *sqnHad, int timeout) {
     int i, bit, hadBitSize;
     struct timespec start, stop;
     double accum;
@@ -100,14 +100,12 @@ int PacketManager::checkForRequest(byte *sqnHad) {
             }
 
             // timeout > delay ms (only relevant in transmission has already started)
-            if (accum > P_MAXDELAY) {
-                if (i == 0) {
-                    m_log->warn("Timeout while waiting for a sequence number");
-                    return -2;
-                } else {
-                    m_log->warn("Timeout while receiving a sequence number ({0} bits)", i);
-                    return -1;
-                }
+            if (i != 0 && accum > CYCLE_DELAY) {
+                m_log->warn("Timeout while receiving a sequence number ({0} bits)", i);
+                return -1;
+            } else if (accum > timeout) {
+                m_log->warn("Timeout while waiting for a sequence number");
+                return -2;
             }
         } while (bit < 0);
 
@@ -133,7 +131,7 @@ int PacketManager::request(unsigned int sqn) {
 
     sqn_bits = P_SQN_BITS;
     req.tv_sec = 0;
-    req.tv_nsec = 10000000; // 160ms
+    req.tv_nsec = 40000000; // 160ms
 
     sqnByte = (byte) (sqn % modSqn & 0xFF);
     hadBitSize = m_ECC->encode(&sqnByte, sqn_bits, &sqnHad); //Hadamard implementation only supports 3bits
@@ -145,12 +143,10 @@ int PacketManager::request(unsigned int sqn) {
         return -1;
     }
 
-    m_sens->waitForSensReady();
-    nanosleep(&req, &rem);
-
     for (i = 0; i < hadBitSize; i++) {
         // wait until the sensor is ready
         m_sens->waitForSensReady();
+        nanosleep(&req, &rem);
         m_sens->sendBit((bit_t) (sqnHad & (1 << (i % 8))));
     }
 
@@ -239,10 +235,10 @@ int PacketManager::unpack(std::vector<Packet> packets, std::vector<bit_t> &outpu
 int PacketManager::send(Packet packet) {
     struct timespec req, rem;
     req.tv_sec = 0;
-    req.tv_nsec = 10000000; // 10ms
+    req.tv_nsec = 40000000; // 10ms
 
-    m_sens->waitForSensReady();
-    nanosleep(&req, &rem);
+    //m_sens->waitForSensReady();
+    //nanosleep(&req, &rem);
 
     m_log->debug("Sending {}bit packet.", packet.size());
     for (int i = 0; i < packet.size(); i++) {
@@ -250,6 +246,7 @@ int PacketManager::send(Packet packet) {
 
         // wait until the sensor is ready
         m_sens->waitForSensReady();
+        nanosleep(&req, &rem);
         m_sens->sendBit(packet[i]);
     }
 
@@ -258,7 +255,7 @@ int PacketManager::send(Packet packet) {
     return 0;
 }
 
-int PacketManager::receive(Packet &packet, int sqn, int scale) {
+int PacketManager::receive(Packet &packet, int sqn, int scale, int timeout) {
     int bit;
     struct timespec start, stop;
     double accum;
@@ -288,7 +285,7 @@ int PacketManager::receive(Packet &packet, int sqn, int scale) {
             }
 
             // timeout > delay ms
-            if (accum > P_MAXDELAY) {
+            if (accum > timeout) {
                 if (i == 0) {
                     m_log->warn("Sender didnt start the transmission");
                     return -2; // sender didnt start the transmission
@@ -352,7 +349,7 @@ void PacketManager::wait(int cycle_count) {
     struct timespec req, rem;
 
     req.tv_sec = 0;
-    req.tv_nsec = MAXDELAY_MS / 2 * cycle_count; // 80ms per cycle
+    req.tv_nsec = CYCLE_DELAY * cycle_count; // 80ms per cycle
 
     nanosleep(&req, &rem);
 }

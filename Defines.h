@@ -2,7 +2,7 @@
 
 #include <cmath>
 
-#define MAXDELAY_MS 80 // ms (1cycle)
+#define CYCLE_MS 80 // ms (1 cycle)
 
 // c++ cant handle single bits too well (referencing, etc.)
 typedef unsigned char bit_t;
@@ -17,6 +17,6 @@ const unsigned int P_CMD_BITS = 2;
 
 const unsigned int P_TEST_UPSCALE = 2;
 
-const unsigned int P_MAXDELAY = (MAXDELAY_MS % 1000) * 1000000;
+const unsigned int CYCLE_DELAY = (CYCLE_MS % 1000) * 1000000;
 
 const int MAX_SQN = (int) pow(2, P_SQN_BITS) - 1;

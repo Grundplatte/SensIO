@@ -43,6 +43,17 @@ int PacketFactory::getNextPacket(int sqn, Packet &ret) {
     if (next_packet_start == data.end())
         return -1; // no data left
 
+
+    // TODO: testing scaledown if not much data left (needs better logic)
+    int dist = std::distance(next_packet_start, data.end());
+    m_log->debug("Data left: {}", dist);
+    if (dist * 3 < P_DATA_BITS[packet_scale]) {
+        scaleDown();
+        ret = Packet(Packet::CMD_DOWN, sqn);
+        return 0;
+    }
+
+
     last_packet_start = next_packet_start;
 
     while (next_packet_start != data.end() && next_packet_count < P_DATA_BITS[packet_scale]) {
@@ -52,7 +63,6 @@ int PacketFactory::getNextPacket(int sqn, Packet &ret) {
 
     while (next_packet_count < P_DATA_BITS[packet_scale]) {
         // not enough data left, filling with zeros
-        // TODO: (maybe scale down first?)
         tmp.push_back(0);
         next_packet_count++;
     }
