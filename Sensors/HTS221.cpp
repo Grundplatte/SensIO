@@ -5,14 +5,14 @@ HTS221::HTS221() {
     log = spd::get("HTS221");
 
     if (log)
-        m_log = log;
+        _log = log;
     else
-        m_log = spd::stdout_color_mt("HTS221");
+        _log = spd::stdout_color_mt("HTS221");
 
-    m_i2c = new I2C_HAL();
+    _i2c = new I2C_HAL();
 }
 
-HTS221::~HTS221() {}
+HTS221::~HTS221() = default;
 
 int HTS221::isSensReady(byte status)
 {
@@ -29,24 +29,23 @@ int HTS221::isHumReady(byte status)
 
 int HTS221::getStatus(byte *status)
 {
-	return m_i2c->read(I2C_TEMP_ADDR, I2C_TEMP_REG_STATUS, 1, status);
+    return _i2c->read(I2C_TEMP_ADDR, I2C_TEMP_REG_STATUS, 1, status);
 }
 
 int HTS221::waitForSensReady()
 {
 	byte status;
-    int i;
 
-    m_log->trace("Waiting for sensor...");
+    _log->trace("Waiting for sensor...");
 
-	for(i=0; i<CONF; i++){
+    for (int i = 0; i < CONF; i++) {
 		do {
             getStatus(&status);
             // TODO: if this takes more then a few cycles, check if sensor is active
 		} while(!isSensReady(status));
 	}
 
-    m_log->trace("Ready...");
+    _log->trace("Ready...");
 	return 0;
 }
 
@@ -58,13 +57,13 @@ int HTS221::sendBit(bit_t bit)
     // 1
     if (bit) {
 		// read tmpout register with autoincrement address
-        m_log->trace("Send bit 1");
-        m_i2c->read(I2C_TEMP_ADDR, I2C_TEMP_REG_HUM_OUT_L + 0x80, 2, data);
+        _log->trace("Send bit 1");
+        _i2c->read(I2C_TEMP_ADDR, I2C_TEMP_REG_HUM_OUT_L + 0x80, 2, data);
     } else {
         // 0
         // read humout
-        m_log->trace("Send bit 0");
-        m_i2c->read(I2C_TEMP_ADDR, I2C_TEMP_REG_TMP_OUT_L + 0x80, 2, data);
+        _log->trace("Send bit 0");
+        _i2c->read(I2C_TEMP_ADDR, I2C_TEMP_REG_TMP_OUT_L + 0x80, 2, data);
     }
 	
 	return 0;
@@ -75,7 +74,7 @@ int HTS221::sendReset()
     byte data[4];
 
     // read both (tmpout + humout) in one go
-    m_i2c->read(I2C_TEMP_ADDR, I2C_TEMP_REG_HUM_OUT_L + 0x80, 4, data);
+    _i2c->read(I2C_TEMP_ADDR, I2C_TEMP_REG_HUM_OUT_L + 0x80, 4, data);
 
     return 0;
 }
@@ -87,16 +86,15 @@ int HTS221::sendReset()
 // send raw data
 int HTS221::send(byte *data, int length)
 {
-    int i, l;
     byte bit;
-	struct timespec req, rem;
-	
 	bit = 0x01;
+
+    struct timespec req{}, rem{};
 	req.tv_sec = 0;
 	req.tv_nsec = 10000000; // 10ms
 
-	for(l=0; l<length; l++){
-		for(i=7; i>=0; i--) {	
+    for (int l = 0; l < length; l++) {
+        for (int i = 7; i >= 0; i--) {
 			// wait until the sensor is ready
 			waitForSensReady();
 				
@@ -110,8 +108,6 @@ int HTS221::send(byte *data, int length)
 int HTS221::tryReadBit()
 {
     byte status;
-    int i;
-
     getStatus(&status);
 
 	// nothing read
@@ -122,32 +118,32 @@ int HTS221::tryReadBit()
 	if(isHumReady(status) && !isTempReady(status)){
         // FIXME: wait a few ms, then read again to put less pressure on the bus
 		// reread a few times to confirm
-		for(i=0; i<CONF; i++){
+        for (int i = 0; i < CONF; i++) {
             getStatus(&status);
 			if(!isHumReady(status)){
-                m_log->warn("Someone interfered?\n");
+                _log->warn("Someone interfered?\n");
 			}
 		}
 
-        m_log->trace("Received bit 0");
+        _log->trace("Received bit 0");
 		return 0;
 	}
 	// hum was read => 1
 	if(isTempReady(status) && !isHumReady(status)){
         // FIXME: wait a few ms, then read again to put less pressure on the bus
 		// reread a few times to confirm
-		for(i=0; i<CONF; i++){
+        for (int i = 0; i < CONF; i++) {
             getStatus(&status);
 			if(!isTempReady(status)){
-                m_log->warn("Someone interfered?\n");
+                _log->warn("Someone interfered?\n");
 			}
 		}
 
-        m_log->trace("Received bit 1");
+        _log->trace("Received bit 1");
 		return 1;
 	}
 	// error
-    m_log->warn("Status corrupted:  0x{0:2x}\n", status);
+    _log->warn("Status corrupted:  0x{0:2x}\n", status);
 	return -2;
 }
 
@@ -157,12 +153,12 @@ int HTS221::tryReadBit()
 
 int HTS221::receive(uint8_t *data)
 {
-    int bit, i, l;
-	
-	for(l=0; l<sizeof(data); l++){
+    int bit;
+
+    for (int l = 0; l < sizeof(data); l++) {
 		data[l] = 0;
-		
-		for(i=7; i>=0; i--) {		
+
+        for (int i = 7; i >= 0; i--) {
 			waitForSensReady();
 			// wait until someone accesses the sensor results
 			do {
@@ -178,7 +174,7 @@ int HTS221::receive(uint8_t *data)
 				//printf("[D] receive: received 0\n", data[l]);
 			}
 		}
-        m_log->debug("receive: received 0x{0:2x}\n", data[l]);
+        _log->debug("receive: received 0x{0:2x}\n", data[l]);
 	}
 }
 
@@ -189,14 +185,13 @@ int HTS221::receive(uint8_t *data)
 int HTS221::detectUsage()
 {
     byte status;
-    int i;
-	struct timespec *time1p, *time2p, *temp, time1, time2;
+    struct timespec *time1p, *time2p, *temp, time1{}, time2{};
 	long int diffs, diffns;
 	
 	time1p = &time1;
 	time2p = &time2;
-	
-	for(i=0; i<10; i++){
+
+    for (int i = 0; i < 10; i++) {
 		// wait for ready
 		do {
             getStatus(&status);
@@ -219,7 +214,7 @@ int HTS221::detectUsage()
 				diffns += 1000000000;
 			}
 
-            m_log->debug("Sensor used after {0:2}.{1:3}s", diffs, diffns / 1000000L);
+            _log->debug("Sensor used after {0:2}.{1:3}s", diffs, diffns / 1000000L);
 		}
 		
 		// switch time pointers
@@ -233,15 +228,15 @@ int HTS221::isActive() {
     byte data;
 
     // read both (tmpout + humout) in one go
-    m_i2c->read(I2C_TEMP_ADDR, I2C_TEMP_REG_CTRL1, 1, &data);
+    _i2c->read(I2C_TEMP_ADDR, I2C_TEMP_REG_CTRL1, 1, &data);
 
-    m_log->trace("Sensor HTS221 data: 0x{0:2x}", data);
+    _log->trace("Sensor HTS221 data: 0x{0:2x}", data);
 
     if (data & 0x80) {
         // active
         if ((data & 0x07) != 0x07) {
             data = 0x87;
-            m_i2c->write(I2C_TEMP_ADDR, I2C_TEMP_REG_CTRL1, 1, &data);
+            _i2c->write(I2C_TEMP_ADDR, I2C_TEMP_REG_CTRL1, 1, &data);
         }
 
         return 1;
@@ -250,17 +245,17 @@ int HTS221::isActive() {
     return 0;
 }
 
-int HTS221::toggleOnOff(bit_t onOff) {
+int HTS221::toggleOnOff(bit_t on_off) {
     byte data;
 
-    m_log->trace("Sensor HTS221 toggle: {0}", onOff);
+    _log->trace("Sensor HTS221 toggle: {0}", on_off);
 
-    if (onOff)
+    if (on_off)
         data = 0x87;
     else
         data = 0x07;
 
-    m_i2c->write(I2C_TEMP_ADDR, I2C_TEMP_REG_CTRL1, 1, &data);
+    _i2c->write(I2C_TEMP_ADDR, I2C_TEMP_REG_CTRL1, 1, &data);
 
     return 0;
 }

@@ -2,7 +2,6 @@
 #include <bitset>
 #include "spdlog/spdlog.h"
 #include "PacketSystem/PacketManager.h"
-#include "PacketSystem/ECC/Hadamard.h"
 
 namespace spd = spdlog;
 
@@ -39,34 +38,27 @@ int main(int argc, char *argv[]) {
     log->info("Sender started.");
 
     byte data[21] = "TESTaTESTbTESTcTESTd";
-    Packet nextPacket;
-    byte sqnHad;
+    Packet next_packet;
+    byte sqn_had;
     int result;
     int error_count = 0;
     int success_count = 0;
 
-    PacketManager ps = PacketManager();
+    PacketManager manager = PacketManager();
     PacketFactory factory = PacketFactory(data, 21);
-
-    ECC *ecc = new Hadamard();
     State state = WAIT_FOR_SQN;
 
     int packetSqn = -1;
     int modSqn = MAX_SQN + 1;
 
-    //ps.printInfo();
-    //ps.pack(data, 20, packets);
-
-
-    while(1) {
+    while (true) {
         switch (state) {
             case ERROR:
                 log->critical("Error -> exiting.\n");
-                exit(-1);
-                break;
+                return -1;
 
             case WAIT_FOR_SQN:
-                result = ps.waitForRequest(&sqnHad);
+                result = manager.waitForRequest(&sqn_had);
 
                 if (result == 0)
                     state = DECODE_SQN;
@@ -74,11 +66,11 @@ int main(int argc, char *argv[]) {
                 break;
 
             case CHECK_FOR_SQN:
-                result = ps.checkForRequest(&sqnHad, CYCLE_DELAY);
+                result = manager.checkForRequest(&sqn_had, CYCLE_DELAY);
 
                 if (result == -2) {
                     state = SEND_PACKET;
-                    ps.wait(1); // TODO: ??
+                    manager.wait(1); // TODO: ??
                 } else if (result == -1) {
                     state = RECHECK_FOR_SQN;
                 } else if (result == 0)
@@ -87,11 +79,11 @@ int main(int argc, char *argv[]) {
                 break;
 
             case RECHECK_FOR_SQN:
-                result = ps.checkForRequest(&sqnHad, CYCLE_DELAY * 2);
+                result = manager.checkForRequest(&sqn_had, CYCLE_DELAY * 2);
 
                 if (result == -2) {
                     state = SEND_PACKET;
-                    ps.wait(1); // TODO: ??
+                    manager.wait(1); // TODO: ??
                 } else if (result == -1) {
                     state = RECHECK_FOR_SQN;
                 } else if (result == 0)
@@ -100,7 +92,7 @@ int main(int argc, char *argv[]) {
                 break;
 
             case DECODE_SQN:
-                result = ps.checkRequest(&sqnHad);
+                result = manager.checkRequest(&sqn_had);
                 //result = ecc->check(&sqnHad, 7);
                 //ecc->decode(&sqnHad, 8, &sqn);
 
@@ -111,23 +103,23 @@ int main(int argc, char *argv[]) {
                     state = STOP;
                 else if (result == (packetSqn) % modSqn) {
                     log->warn("Receiver requested the same packet again.");
-                    if (!nextPacket.isCommand()) {
+                    if (!next_packet.isCommand()) {
                         // Packet may be too big, try scaling down
                         error_count++;
                         success_count = 0;
                         if (factory.scaleDown() == 0) {
                             factory.previous();
-                            factory.getCommandPacket(Packet::CMD_DOWN, packetSqn, nextPacket);
+                            factory.getCommandPacket(Packet::CMD_DOWN, packetSqn, next_packet);
                             log->info("Packet size reduced");
                         }
                     }
                     state = SEND_PACKET;
                 } else if (result == (packetSqn + 1) % modSqn) {
 
-                    result = factory.getNextPacket(++packetSqn, nextPacket);
+                    result = factory.getNextPacket(++packetSqn, next_packet);
                     if (result == -1) {
                         // no packets left, send stop
-                        factory.getCommandPacket(Packet::CMD_STOP, packetSqn, nextPacket);
+                        factory.getCommandPacket(Packet::CMD_STOP, packetSqn, next_packet);
                         break;
                     }
 
@@ -135,7 +127,7 @@ int main(int argc, char *argv[]) {
                         success_count = 0;
                         if(factory.scaleUp() == 0){
                             factory.previous();
-                            factory.getCommandPacket(Packet::CMD_UP, packetSqn, nextPacket);
+                            factory.getCommandPacket(Packet::CMD_UP, packetSqn, next_packet);
                             log->info("Packet size increased");
                         }
                     }
@@ -151,14 +143,13 @@ int main(int argc, char *argv[]) {
 
             case SEND_PACKET:
                 log->info("Sending packet {0}", packetSqn);
-                ps.send(nextPacket);
+                manager.send(next_packet);
                 state = CHECK_FOR_SQN;
                 break;
 
             case STOP:
                 log->info("Stopping.");
-                return (0);
-                break;
+                return 0;
         }
     }
 }

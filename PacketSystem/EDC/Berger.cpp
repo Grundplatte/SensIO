@@ -6,38 +6,30 @@
 #include <cstdio>
 #include "Berger.h"
 
-const int Berger::MAX_CHECK_LENGTH = 4;
-
 Berger::Berger() {
-    std::shared_ptr<spdlog::logger> log;
-    log = spd::get("Berger");
-
-    if (log)
-        m_log = log;
-    else
-        m_log = spd::stdout_color_mt("Berger");
+    std::shared_ptr<spdlog::logger> log = spd::get("Berger");
+    _log = log ? log : spd::stdout_color_mt("Berger");
 }
 
-Berger::~Berger() {}
+Berger::~Berger() = default;
 
-// TODO: support longer codes
 int Berger::generate(std::vector<bit_t> input, std::vector<bit_t> &output) {
 
-    int checkBits = calcOutputSize(input.size());
+    int check_bits = calcOutputSize(input.size());
 
-    m_log->trace("Generating {0} checkbits.", checkBits);
+    _log->trace("Generating {0} checkbits.", check_bits);
 
     unsigned int count = 0;
-    for (int i = 0; i < input.size(); i++) {
-        if (input[i])
+    for (unsigned char i : input) {
+        if (i)
             count++;
     }
 
-    for (int i = 0; i < checkBits; i++) {
+    for (int i = 0; i < check_bits; i++) {
         output.push_back((bit_t) ((count & (1 << i)) >> i));
     }
 
-    return checkBits;
+    return check_bits;
 }
 
 int Berger::check(std::vector<bit_t> input, std::vector<bit_t> edc_in) {
@@ -46,14 +38,14 @@ int Berger::check(std::vector<bit_t> input, std::vector<bit_t> edc_in) {
     // generate reference berger code and confirm the bitsize of the error code
     generate(input, berger_calc);
     if (berger_calc.size() != edc_in.size()) {
-        m_log->warn("Checkbits: size not matching.");
+        _log->warn("Checkbits: size not matching.");
         return -3;
     }
 
     for (int i = 0; i < edc_in.size(); i++) {
         if (edc_in[i] != berger_calc[i]) {
-            m_log->warn("Bits don't match: input({0:x}), calc({1:x}), ind({2})", edc_in[i], berger_calc[i],
-                        i);
+            _log->warn("Bits don't match: input({0:x}), calc({1:x}), ind({2})", edc_in[i], berger_calc[i],
+                       i);
             return -1;
         }
     }

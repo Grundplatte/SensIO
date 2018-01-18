@@ -16,7 +16,9 @@ const unsigned int P_SQN_BITS = 2;
 const unsigned int P_CMD_BITS = 2;
 
 const unsigned int P_TEST_UPSCALE = 2;
+const unsigned int P_INIT_SCALE = 2;
 
 const unsigned int CYCLE_DELAY = (CYCLE_MS % 1000) * 1000000;
+const unsigned int WRITE_DELAY = CYCLE_DELAY / 2; // allow "normal" applications to read the status flag?
 
 const int MAX_SQN = (int) pow(2, P_SQN_BITS) - 1;

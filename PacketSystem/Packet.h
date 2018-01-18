@@ -52,14 +52,14 @@ public:
     bit_t const &operator[](int index);
 
 private:
-    std::shared_ptr<spd::logger> m_log;
+    std::shared_ptr<spd::logger> _log;
 
-    std::vector<bit_t> data_bits;
-    std::vector<bit_t> sqn_bits;
-    std::vector<bit_t> edc_bits;
+    std::vector<bit_t> _data_bits;
+    std::vector<bit_t> _sqn_bits;
+    std::vector<bit_t> _edc_bits;
 
-    int sqn;
-    bit_t type;
+    int _sqn;
+    bit_t _type;
 
     void updateEDC();
 

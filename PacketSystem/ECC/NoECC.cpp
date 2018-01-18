@@ -6,16 +6,11 @@
 #include "NoECC.h"
 
 NoECC::NoECC() {
-    std::shared_ptr<spdlog::logger> log;
-    log = spd::get("NoECC");
-
-    if (log)
-        m_log = log;
-    else
-        m_log = spd::stdout_color_mt("NoECC");
+    std::shared_ptr<spdlog::logger> log = spd::get("NoECC");
+    _log = log ? log : spd::stdout_color_mt("NoECC");
 }
 
-NoECC::~NoECC() {}
+NoECC::~NoECC() = default;
 
 int NoECC::encode(byte *input, size_t length, byte *output) {
     memcpy(output, input, length);

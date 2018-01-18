@@ -37,9 +37,8 @@ int main(int argc, char *argv[]) {
         }
 
     log->info("Receiver started.");
-    byte data[21] = "TESTaTESTbTESTcTESTd";
 
-    PacketManager *ps = new PacketManager();
+    PacketManager *manager = new PacketManager();
     std::vector<Packet> packets;
     Packet packet;
     int result;
@@ -48,22 +47,21 @@ int main(int argc, char *argv[]) {
     State state = REQUEST;
     int i = 0;
 
-    ps->printInfo();
+    manager->printInfo();
 
-    while (1) {
+    while (true) {
         switch (state) {
             case ERROR:
                 log->critical("Error -> exiting");
-                exit(-1);
-                break;
+                return -1;
 
             case REQUEST:
-                ps->request(i);
+                manager->request(i);
                 state = RECEIVE;
                 break;
 
             case RECEIVE:
-                result = ps->receive(packet, i, scale, CYCLE_DELAY);
+                result = manager->receive(packet, i, scale, CYCLE_DELAY);
 
                 // transition
                 if (result == 0) {
@@ -92,10 +90,10 @@ int main(int argc, char *argv[]) {
                     }
                 } else if (result == -1) {
                     state = RERECEIVE;
-                    ps->wait(1);
+                    manager->wait(1);
                 } else if (result == -2) {
                     state = REQUEST;
-                    ps->wait(1);
+                    manager->wait(1);
                 }
                 else
                     state = ERROR;
@@ -103,7 +101,7 @@ int main(int argc, char *argv[]) {
                 break;
 
             case RERECEIVE:
-                result = ps->receive(packet, i, scale, CYCLE_DELAY * 2);
+                result = manager->receive(packet, i, scale, CYCLE_DELAY * 2);
 
                 // transition
                 if (result == 0) {
@@ -132,10 +130,10 @@ int main(int argc, char *argv[]) {
                     }
                 } else if (result == -1) {
                     state = RERECEIVE;
-                    ps->wait(1);
+                    manager->wait(1);
                 } else if (result == -2) {
                     state = REQUEST;
-                    ps->wait(1);
+                    manager->wait(1);
                 } else
                     state = ERROR;
 
@@ -143,17 +141,16 @@ int main(int argc, char *argv[]) {
 
             case STOP:
                 log->info("Done. Stopping.");
-                ps->request(i - 2);
+                manager->request(i - 2);
 
                 byte *output;
-                ps->unpack(packets, &output);
+                manager->unpack(packets, &output);
                 log->info("Unpacked: {}", output);
                 free(output);
 
-                exit(0);
-                break;
+                return 0;
 
-            default:
+            case IDLE:
                 break;
         }
     }

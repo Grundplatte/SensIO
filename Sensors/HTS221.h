@@ -32,7 +32,7 @@ public:
 
     int isActive() override;
 
-    int toggleOnOff(bit_t onOff) override;
+    int toggleOnOff(bit_t on_off) override;
 
     int waitForSensReady() override;
 
@@ -51,7 +51,7 @@ public:
 
 private:
 
-    I2C_HAL *m_i2c;
+    I2C_HAL *_i2c;
 
     int isSensReady(uint8_t status);
     int isTempReady(uint8_t status);

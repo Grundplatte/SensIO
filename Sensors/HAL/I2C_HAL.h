@@ -23,11 +23,13 @@
 class I2C_HAL : HAL {
 public:
 
-    int read(byte slaveAddr, byte regAddr, unsigned int length, byte *data) override ;
-    int write(byte slaveAddr, byte regAddr, unsigned int length, byte *data) override ;
+    int read(byte slave_addr, byte reg_addr, unsigned int length, byte *data) override;
+
+    int write(byte slave_addr, byte reg_addr, unsigned int length, byte *data) override;
 
     I2C_HAL();
     ~I2C_HAL();
+
 private:
-    int m_I2C;
+    int _i2c;
 };

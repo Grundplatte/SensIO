@@ -26,24 +26,24 @@ public:
 
     /**
      * Wait until someone requests a packet
-     * @param sqnHad: Hadamard encoded sequence number
+     * @param sqn_had: Hadamard encoded sequence number
      * @return: TODO: dummy
      **/
-    int waitForRequest(byte *sqnHad);
+    int waitForRequest(byte *sqn_had);
 
     /**
      * Check if someone requests a packet (waits for a maximum of XX cycles)
-     * @param sqnHad: Hadamard encoded sequence number
+     * @param sqn_had: Hadamard encoded sequence number
      * @return: TODO: dummy
      **/
-    int checkForRequest(byte *sqnHad, int timeout);
+    int checkForRequest(byte *sqn_had, int timeout);
 
     /**
      * Request a packet using the sequence number sqn
      * @param sqn: sequence number
      * @return: TODO: dummy
      **/
-    int request(unsigned int sqn);
+    int request(int sqn);
 
     int checkRequest(byte *sqn_had);
 
@@ -79,12 +79,12 @@ public:
     void wait(int cycle_count);
 
 private:
-    ECC *m_ECC;
-    EDC *m_EDC;
-    Sensor *m_sens;
-    std::shared_ptr<spd::logger> m_log;
+    ECC *_ecc;
+    EDC *_edc;
+    Sensor *_sens;
+    std::shared_ptr<spd::logger> _log;
 
-    int scale;
+    int _scale = P_INIT_SCALE;
 
     int check(Packet packet, int sqn);
 };
