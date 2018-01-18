@@ -12,7 +12,7 @@ public:
      * @param data: Data buffer to store the resulting data
      * @return: (-1 on error, 0 otherwise)
      **/
-    virtual int read(byte slaveAddr, byte regAddr, unsigned int length, byte *data) = 0;
+    virtual int read(byte slave_addr, byte regAddr, unsigned int length, byte *data) = 0;
 
     /**
      * Generic write to sensor
@@ -22,5 +22,5 @@ public:
      * @param data: Data to write
      * @return: (-1 on error, 0 otherwise)
      **/
-    virtual int write(byte slaveAddr, byte regAddr, unsigned int length, byte *data) = 0;
+    virtual int write(byte slave_addr, byte reg_addr, unsigned int length, byte *data) = 0;
 };

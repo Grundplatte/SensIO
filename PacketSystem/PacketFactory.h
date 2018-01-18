@@ -33,14 +33,14 @@ public:
     int scaleDown();
 
 private:
-    std::shared_ptr<spd::logger> m_log;
+    std::shared_ptr<spd::logger> _log;
 
-    std::vector<bit_t> data;
-    std::vector<bit_t>::iterator last_packet_start;
-    std::vector<bit_t>::iterator next_packet_start;
+    std::vector<bit_t> _data;
+    std::vector<bit_t>::iterator _last_packet_start;
+    std::vector<bit_t>::iterator _next_packet_start;
 
     // dynamic stuff
-    int packet_scale = 2;
+    int _scale = P_INIT_SCALE;
 };
 
 

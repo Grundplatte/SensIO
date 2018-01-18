@@ -37,5 +37,5 @@ public:
     virtual int calcOutputSize(unsigned int length) = 0;
 
 protected:
-    std::shared_ptr<spd::logger> m_log;
+    std::shared_ptr<spd::logger> _log;
 };

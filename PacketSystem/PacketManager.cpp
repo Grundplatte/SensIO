@@ -10,46 +10,44 @@ namespace spd = spdlog;
 
 PacketManager::PacketManager() {
     // <-- Error correction code settings (for the sequence number) -->
-    m_ECC = new Hadamard();
+    _ecc = new Hadamard();
     //m_ECC = new NoECC();
 
     // <-- Error detection code settings (for the packet)-->
-    m_EDC = new Berger();
+    _edc = new Berger();
     //m_EDC = new NoEDC();
 
     // <-- Sensor settings -->
-    m_sens = new HTS221();
-    if (!m_sens->isActive())
-        m_sens->toggleOnOff(1);
-
-    scale = 2;
+    _sens = new HTS221();
+    if (!_sens->isActive())
+        _sens->toggleOnOff(1);
 
     // <-- Log settings -->
     std::shared_ptr<spdlog::logger> log = spd::get("PMgr");
-    m_log = log ? log : spd::stdout_color_mt("PMgr");
+    _log = log ? log : spd::stdout_color_mt("PMgr");
 }
 
 PacketManager::~PacketManager() {
-    delete (m_EDC);
-    delete (m_ECC);
-    delete (m_sens);
+    delete (_edc);
+    delete (_ecc);
+    delete (_sens);
 }
 
-// TODO: make dynamic!
-int PacketManager::waitForRequest(byte *sqnHad) {
-    int i, bit, hadBitSize;
-    struct timespec start, stop;
+int PacketManager::waitForRequest(byte *sqn_had) {
+    int bit;
+    struct timespec start{}, stop{};
     double accum;
 
-    *sqnHad = 0;
-    hadBitSize = m_ECC->getEncodedSize(P_SQN_BITS);
-    for (i = 0; i < hadBitSize; i++) {
+    *sqn_had = 0;
+    int had_bitsize = _ecc->getEncodedSize(P_SQN_BITS);
 
-        m_sens->waitForSensReady();
+    for (int i = 0; i < had_bitsize; i++) {
+
+        _sens->waitForSensReady();
         clock_gettime(CLOCK_REALTIME, &start);
         // wait until someone accesses the sensor results
         do {
-            bit = m_sens->tryReadBit();
+            bit = _sens->tryReadBit();
             //printf("[D] receive: bit = %i\n", bit);
 
             clock_gettime(CLOCK_REALTIME, &stop);
@@ -61,35 +59,36 @@ int PacketManager::waitForRequest(byte *sqnHad) {
 
             // timeout > delay ms (only relevant in transmission has already started)
             if (i != 0 && accum > CYCLE_DELAY) {
-                m_log->warn("[D] Timeout while receiving a sequence number ({0} bits)", i);
+                _log->warn("[D] Timeout while receiving a sequence number ({0} bits)", i);
                 return -2;
             }
         } while (bit < 0);
 
         if (bit) {
-            *sqnHad |= (1 << i);
+            *sqn_had |= (1 << i);
         }
     }
 
-    m_log->debug("Received sqnHad: 0x{0:2x}", *sqnHad);
+    _log->debug("Received sqnHad: 0x{0:2x}", *sqn_had);
 
     return 0;
 }
 
-int PacketManager::checkForRequest(byte *sqnHad, int timeout) {
-    int i, bit, hadBitSize;
-    struct timespec start, stop;
+int PacketManager::checkForRequest(byte *sqn_had, int timeout) {
+    int bit;
+    struct timespec start{}, stop{};
     double accum;
 
-    *sqnHad = 0;
-    hadBitSize = m_ECC->getEncodedSize(P_SQN_BITS);
-    for (i = 0; i < hadBitSize; i++) {
+    *sqn_had = 0;
+    int had_bitsize = _ecc->getEncodedSize(P_SQN_BITS);
 
-        m_sens->waitForSensReady();
+    for (int i = 0; i < had_bitsize; i++) {
+
+        _sens->waitForSensReady();
         clock_gettime(CLOCK_REALTIME, &start);
         // wait until someone accesses the sensor results
         do {
-            bit = m_sens->tryReadBit();
+            bit = _sens->tryReadBit();
             //printf("[D] receive: bit = %i\n", bit);
 
             clock_gettime(CLOCK_REALTIME, &stop);
@@ -101,105 +100,57 @@ int PacketManager::checkForRequest(byte *sqnHad, int timeout) {
 
             // timeout > delay ms (only relevant in transmission has already started)
             if (i != 0 && accum > CYCLE_DELAY) {
-                m_log->warn("Timeout while receiving a sequence number ({0} bits)", i);
+                _log->warn("Timeout while receiving a sequence number ({0} bits)", i);
                 return -1;
             } else if (accum > timeout) {
-                m_log->warn("Timeout while waiting for a sequence number");
+                _log->warn("Timeout while waiting for a sequence number");
                 return -2;
             }
         } while (bit < 0);
 
         if (bit) {
-            *sqnHad |= (1 << i);
+            *sqn_had |= (1 << i);
             //printf("[D] receive: received 1\n");
         } else {
             //printf("[D] receive: received 0\n");
         }
     }
 
-    m_log->debug("Received sqnHad: 0x{0:2x}", *sqnHad);
+    _log->debug("Received sqnHad: 0x{0:2x}", *sqn_had);
 
     return 0;
 }
 
 // TODO: support more than 3/8bit
-int PacketManager::request(unsigned int sqn) {
-    int i, hadBitSize, sqn_bits;
-    struct timespec req, rem;
-    byte sqnByte, sqnHad;
-    unsigned int modSqn = (unsigned int) MAX_SQN + 1;
+int PacketManager::request(int sqn) {
+    int mod_sqn = MAX_SQN + 1;
+    size_t sqn_bits = P_SQN_BITS;
 
-    sqn_bits = P_SQN_BITS;
+    struct timespec req{}, rem{};
     req.tv_sec = 0;
     req.tv_nsec = 40000000; // 160ms
 
-    sqnByte = (byte) (sqn % modSqn & 0xFF);
-    hadBitSize = m_ECC->encode(&sqnByte, sqn_bits, &sqnHad); //Hadamard implementation only supports 3bits
+    byte sqn_had;
+    byte sqn_byte = (byte) (sqn % mod_sqn & 0xFF);
+    int had_bitsize = _ecc->encode(&sqn_byte, sqn_bits, &sqn_had);
 
-    m_log->info("Requesting packet {0}", sqn);
-    m_log->debug("{0} bit hadamard encoded sqn: 0x{1:2x}", hadBitSize, sqnHad);
+    _log->info("Requesting packet {0}", sqn);
+    _log->debug("{0} bit hadamard encoded sqn: 0x{1:2x}", had_bitsize, sqn_had);
 
-    if (hadBitSize < 0) {
+    if (had_bitsize < 0) {
         return -1;
     }
 
-    for (i = 0; i < hadBitSize; i++) {
+    for (int i = 0; i < had_bitsize; i++) {
         // wait until the sensor is ready
-        m_sens->waitForSensReady();
+        _sens->waitForSensReady();
         nanosleep(&req, &rem);
-        m_sens->sendBit((bit_t) (sqnHad & (1 << (i % 8))));
+        _sens->sendBit((bit_t) (sqn_had & (1 << (i % 8))));
     }
 
     return 0;
 }
 
-/*
-int PacketManager::pack(const byte *data, unsigned int length, std::vector<Packet> &output) {
-
-    if (length == 0)
-        return -1;
-
-    std::vector<bit_t> data_bit;
-
-    // convert byte data to bits
-    for (int i = 0; i < length; i++) {
-        for (int l = 0; l < 8; l++) {
-            data_bit.push_back(((data[i] & (1 << l)) >> l));
-            m_log->trace("Data bit {}: {}", i * 8 + l, data_bit[i * 8 + l]);
-        }
-    }
-
-    return pack(data_bit, output);
-}
-// send one packet (12bit data, 3bit sqn, 4bit edc = 19bit)
-// memory is allocated inside the function, must be freed by caller after use
-
-int PacketManager::pack(std::vector<bit_t> data, std::vector<Packet> &output)
-{
-    output.clear();
-
-    m_log->debug("Packing {0} bit", data.size());
-
-    // split into P_DATA_BITS bit packets
-    int packet_sqn = 0;
-    int global_i = 0;
-    for (global_i = 0; global_i + P_DATA_BITS < data.size(); global_i += P_DATA_BITS) {
-        std::vector<bit_t> packetdata(data.begin() + global_i, data.begin() + global_i + P_DATA_BITS);
-        Packet tmp = Packet(packetdata, packet_sqn++);
-        output.push_back(tmp);
-    }
-    // last packet may be smaller
-    if (global_i < data.size() - 1) {
-        std::vector<bit_t> packetdata(data.begin() + global_i, data.end());
-        Packet tmp = Packet(packetdata, packet_sqn++);
-        output.push_back(tmp);
-    }
-
-    insertCommandPacket(output, Packet::CMD_STOP, packet_sqn);
-
-    m_log->debug("Got {0} packets with {1} bit each", output.size(), output.front().size());
-}
-*/
 int PacketManager::unpack(std::vector<Packet> packets, byte **output) {
     std::vector<bit_t> output_bit;
     unpack(std::move(packets), output_bit);
@@ -211,9 +162,9 @@ int PacketManager::unpack(std::vector<Packet> packets, byte **output) {
     for (int i = 0; i < output_bit.size(); i++) {
         if (output_bit[i]) {
             (*output)[i / 8] |= (1 << (i % 8));
-            m_log->trace("Data bit {0:3}/{2:3}: {1}", i, 1, output_bit.size());
+            _log->trace("Data bit {0:3}/{2:3}: {1}", i, 1, output_bit.size());
         } else {
-            m_log->trace("Data bit {0:3}/{2:3}: {1}", i, 0, output_bit.size());
+            _log->trace("Data bit {0:3}/{2:3}: {1}", i, 0, output_bit.size());
         }
     }
 }
@@ -223,8 +174,8 @@ int PacketManager::unpack(std::vector<Packet> packets, std::vector<bit_t> &outpu
 
     output.clear();
 
-    for (int i = 0; i < packets.size(); i++) {
-        std::vector<bit_t> tmp(packets[i].getData());
+    for (auto &packet : packets) {
+        std::vector<bit_t> tmp(packet.getData());
         output.insert(output.end(), tmp.begin(), tmp.end());
     }
 
@@ -233,21 +184,18 @@ int PacketManager::unpack(std::vector<Packet> packets, std::vector<bit_t> &outpu
 
 // send packet
 int PacketManager::send(Packet packet) {
-    struct timespec req, rem;
+    struct timespec req{}, rem{};
     req.tv_sec = 0;
-    req.tv_nsec = 40000000; // 10ms
+    req.tv_nsec = WRITE_DELAY;
 
-    //m_sens->waitForSensReady();
-    //nanosleep(&req, &rem);
-
-    m_log->debug("Sending {}bit packet.", packet.size());
+    _log->debug("Sending {}bit packet.", packet.size());
     for (int i = 0; i < packet.size(); i++) {
         //printf("[D] Sending bit %i/%i\n", i, packetBitSize);
 
         // wait until the sensor is ready
-        m_sens->waitForSensReady();
+        _sens->waitForSensReady();
         nanosleep(&req, &rem);
-        m_sens->sendBit(packet[i]);
+        _sens->sendBit(packet[i]);
     }
 
     // debug log
@@ -257,25 +205,23 @@ int PacketManager::send(Packet packet) {
 
 int PacketManager::receive(Packet &packet, int sqn, int scale, int timeout) {
     int bit;
-    struct timespec start, stop;
+    struct timespec start{}, stop{};
     double accum;
 
     // packet size for normal packets
-    size_t packetBitSize =
-            1 + P_DATA_BITS[scale] + P_SQN_BITS + m_EDC->calcOutputSize(P_DATA_BITS[scale] + P_SQN_BITS + 1);
-    m_log->debug("Expecting {}bit packet.", packetBitSize);
+    size_t packet_bitsize =
+            1 + P_DATA_BITS[scale] + P_SQN_BITS + _edc->calcOutputSize(P_DATA_BITS[scale] + P_SQN_BITS + 1);
+    _log->debug("Expecting {}bit packet.", packet_bitsize);
 
     // clean up
     std::vector<bit_t> tmp;
-    for (int i = 0; i < packetBitSize; i++) {
-        m_sens->waitForSensReady();
+    for (int i = 0; i < packet_bitsize; i++) {
+        _sens->waitForSensReady();
         clock_gettime(CLOCK_REALTIME, &start);
 
-        //m_log->debug("Receiving bit {0}/{1}", i, packetBitSize);
         // wait until someone accesses the sensor results
         do {
-            bit = m_sens->tryReadBit();
-            //printf("[D] receive: bit = 0x%02x\n", bit);
+            bit = _sens->tryReadBit();
 
             clock_gettime(CLOCK_REALTIME, &stop);
             accum = stop.tv_nsec - start.tv_nsec;
@@ -287,10 +233,10 @@ int PacketManager::receive(Packet &packet, int sqn, int scale, int timeout) {
             // timeout > delay ms
             if (accum > timeout) {
                 if (i == 0) {
-                    m_log->warn("Sender didnt start the transmission");
+                    _log->warn("Sender didnt start the transmission");
                     return -2; // sender didnt start the transmission
                 } else {
-                    m_log->warn("Timeout while receiving, trying again");
+                    _log->warn("Timeout while receiving, trying again");
                     return -1; // timeout (desync? => restart receive)
                 }
             }
@@ -299,12 +245,12 @@ int PacketManager::receive(Packet &packet, int sqn, int scale, int timeout) {
         if (bit) {
             if (tmp.empty()) {
                 // packet size for command packets
-                packetBitSize = 1 + P_CMD_BITS + P_SQN_BITS + m_EDC->calcOutputSize(P_CMD_BITS + P_SQN_BITS + 1);
+                packet_bitsize = 1 + P_CMD_BITS + P_SQN_BITS + _edc->calcOutputSize(P_CMD_BITS + P_SQN_BITS + 1);
             }
 
-            tmp.push_back(true);
+            tmp.push_back(1);
         } else {
-            tmp.push_back(false);
+            tmp.push_back(0);
         }
     }
 
@@ -319,8 +265,9 @@ int PacketManager::receive(Packet &packet, int sqn, int scale, int timeout) {
 
 int PacketManager::check(Packet packet, int sqn) {
     // check in main?
+    // TODO:
     if (packet.isValid()) { //} && packet.hasSqn(sqn)){
-        m_log->debug("Packet ok");
+        _log->debug("Packet ok");
         return 0;
     }
 
@@ -328,28 +275,27 @@ int PacketManager::check(Packet packet, int sqn) {
 }
 
 void PacketManager::printInfo() {
-    int sqn_bits = P_SQN_BITS;
-    int data_bits = P_DATA_BITS[scale];
+    size_t sqn_bits = P_SQN_BITS;
+    int data_bits = P_DATA_BITS[_scale];
 
-    m_log->debug("===== REQUEST =====");
-    m_log->debug("= SQN: {0:2}bits => max sqn: {1}", sqn_bits, MAX_SQN);
-    m_log->debug("= Encoded: {0:2}bits", m_ECC->getEncodedSize(sqn_bits));
-    m_log->debug("===================");
-    m_log->debug("");
-    m_log->debug("====== PACKET ======");
-    m_log->debug("= DATA: {0:2}bit", data_bits);
-    m_log->debug("= SQN : {0:2}bit", sqn_bits);
-    m_log->debug("= EDC : {0:2}bit", m_EDC->calcOutputSize(P_DATA_BITS[scale] + P_SQN_BITS + 1));
-    m_log->debug("====================");
-    m_log->debug("");
+    _log->debug("===== REQUEST =====");
+    _log->debug("= SQN: {0:2}bits => max sqn: {1}", sqn_bits, MAX_SQN);
+    _log->debug("= Encoded: {0:2}bits", _ecc->getEncodedSize(sqn_bits));
+    _log->debug("===================");
+    _log->debug("");
+    _log->debug("====== PACKET ======");
+    _log->debug("= DATA: {0:2}bit", data_bits);
+    _log->debug("= SQN : {0:2}bit", sqn_bits);
+    _log->debug("= EDC : {0:2}bit", _edc->calcOutputSize(P_DATA_BITS[_scale] + P_SQN_BITS + 1));
+    _log->debug("====================");
+    _log->debug("");
 }
 
 void PacketManager::wait(int cycle_count) {
     // TODO: get cycletime from sensor
-    struct timespec req, rem;
-
+    struct timespec req{}, rem{};
     req.tv_sec = 0;
-    req.tv_nsec = CYCLE_DELAY * cycle_count; // 80ms per cycle
+    req.tv_nsec = (__syscall_slong_t) CYCLE_DELAY * cycle_count; // 80ms per cycle
 
     nanosleep(&req, &rem);
 }

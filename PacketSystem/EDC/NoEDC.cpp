@@ -6,16 +6,11 @@
 #include "NoEDC.h"
 
 NoEDC::NoEDC() {
-    std::shared_ptr<spdlog::logger> log;
-    log = spd::get("NoEDC");
-
-    if (log)
-        m_log = log;
-    else
-        m_log = spd::stdout_color_mt("NoEDC");
+    std::shared_ptr<spdlog::logger> log = spd::get("NoEDC");
+    _log = log ? log : spd::stdout_color_mt("NoEDC");
 }
 
-NoEDC::~NoEDC() {}
+NoEDC::~NoEDC() = default;
 
 
 int NoEDC::generate(std::vector<bit_t> input, std::vector<bit_t> &output) {

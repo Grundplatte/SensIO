@@ -5,16 +5,11 @@
 #include "Hadamard.h"
 
 Hadamard::Hadamard() {
-    std::shared_ptr<spdlog::logger> log;
-    log = spd::get("Had");
-
-    if (log)
-        m_log = log;
-    else
-        m_log = spd::stdout_color_mt("Had");
+    std::shared_ptr<spdlog::logger> log = spd::get("Had");
+    _log = log ? log : spd::stdout_color_mt("Had");
 }
 
-Hadamard::~Hadamard() {}
+Hadamard::~Hadamard() = default;
 
 /*
  * Hadamard Code
@@ -26,23 +21,23 @@ int Hadamard::encode(byte *input, size_t length, byte *output) {
 
     switch (length) {
         case 1:
-            *output = H2[*input & 0x03];
+            *output = _H2[*input & 0x03];
             result = 2;
             break;
 
         case 2:
-            *output = H4[*input & 0x07];
+            *output = _H4[*input & 0x07];
             result = 4;
             break;
 
         case 3:
-            *output = H8[*input & 0x0F];
+            *output = _H8[*input & 0x0F];
             result = 8;
             break;
 
         default:
             result = -1;
-            m_log->debug("Encode: Wrong input length: {}", length);
+            _log->debug("Encode: Wrong input length: {}", length);
     }
 
     return result;
@@ -51,39 +46,38 @@ int Hadamard::encode(byte *input, size_t length, byte *output) {
 // simple version of decoder
 int Hadamard::decode(byte *input, size_t length, byte *output)
 {
-    unsigned int i;
     unsigned char *H;
-    int lowHam = 1000;
-    int ham = 0;
 
     switch (length) {
         case 2:
-            H = H2;
+            H = _H2;
             break;
 
         case 4:
-            H = H4;
+            H = _H4;
             break;
 
         case 8:
-            H = H8;
+            H = _H8;
             break;
 
         default:
-            m_log->debug("Decode: Wrong input length: {}", length);
+            _log->debug("Decode: Wrong input length: {}", length);
             return -1;
     }
 
-    for (i = 0; i < length; i++) {
+    int ham = 0;
+    int lowHam = 1000;
+    for (int i = 0; i < length; i++) {
         ham = calcHamming(*input, H[i]);
 
         if(ham < lowHam) {
             lowHam = ham;
-            *output = i;
+            *output = (unsigned char) i;
         }
     }
 
-    m_log->trace("Hadamard decoded: {0x:} => {1:x}", input, output);
+    _log->trace("Hadamard decoded: {0x:} => {1:x}", input, output);
 
     return 3;
 }
@@ -91,10 +85,8 @@ int Hadamard::decode(byte *input, size_t length, byte *output)
 // TODO: support larger inputs
 int Hadamard::calcHamming(byte input1, byte input2)
 {
-    unsigned int i;
-    int ham;
-    ham = 0;
-    for(i=0; i<8; i++) {
+    int ham = 0;
+    for (int i = 0; i < 8; i++) {
         if((input1 & (1<<i)) != (input2 & (1<<i))) {
             ham++;
         }
@@ -114,7 +106,7 @@ int Hadamard::getEncodedSize(size_t length) {
             return 8;
 
         default:
-            m_log->debug("GetSize: Wrong input length: {}", length);
+            _log->debug("GetSize: Wrong input length: {}", length);
             return -1;
     }
 }
@@ -124,25 +116,25 @@ int Hadamard::check(byte *input, size_t length) {
     unsigned char *H;
     switch (length) {
         case 2:
-            H = H2;
+            H = _H2;
             break;
 
         case 4:
-            H = H4;
+            H = _H4;
             break;
 
         case 8:
-            H = H8;
+            H = _H8;
             break;
 
         default:
-            m_log->debug("Decode: Wrong input length: {}", length);
+            _log->debug("Decode: Wrong input length: {}", length);
             return -1;
     }
 
     for (int i = 0; i < length; i++) {
         if (memcmp(input, H + i, 1) == 0) {
-            m_log->debug("Found matching SQN: {}", i);
+            _log->debug("Found matching SQN: {}", i);
             return i;
         }
     }
