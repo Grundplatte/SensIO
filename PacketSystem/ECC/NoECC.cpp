@@ -22,7 +22,6 @@ int NoECC::decode(byte *input, size_t length, byte *output) {
     return length;
 }
 
-// FIXME: return correct size!
 int NoECC::getEncodedSize(size_t length) {
     return 0;
 }
