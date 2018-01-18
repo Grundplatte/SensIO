@@ -127,26 +127,23 @@ int Packet::isValid() {
 }
 
 int Packet::hasSqn(int sqn) {
-    if (sqn == this->_sqn)
+    if (sqn == _sqn)
         return 1;
 
-    if (this->_sqn == -1) {
+    if (_sqn == -1) {
         int mod_sqn = sqn % (MAX_SQN + 1);
         std::vector<bit_t> sqn_bits;
         // add sqn bits
         for (int i = 0; i < P_SQN_BITS; i++) {
-            sqn_bits.push_back((bit_t) (mod_sqn & (1 << i) >> i));
+            sqn_bits.push_back((bit_t) (mod_sqn & (1 << i)) >> i);
         }
 
         for (int i = 0; i < sqn_bits.size(); i++) {
-            if (sqn_bits[i] && !this->_sqn_bits[i])
-                return 0;
-
-            if (!sqn_bits[i] && this->_sqn_bits[i])
+            if (sqn_bits[i] != _sqn_bits[i])
                 return 0;
         }
 
-        this->_sqn = sqn;
+        _sqn = sqn;
         return 1;
     }
 

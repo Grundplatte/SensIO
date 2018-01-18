@@ -47,8 +47,6 @@ int main(int argc, char *argv[]) {
     State state = REQUEST;
     int i = 0;
 
-    manager->printInfo();
-
     while (true) {
         switch (state) {
             case ERROR:

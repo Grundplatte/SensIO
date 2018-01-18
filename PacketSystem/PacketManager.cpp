@@ -117,7 +117,6 @@ int PacketManager::checkForRequest(byte *sqn_had, int long_timeout) {
     return 0;
 }
 
-// TODO: support more than 3/8bit
 int PacketManager::request(int sqn) {
     int mod_sqn = MAX_SQN + 1;
     size_t sqn_bits = P_SQN_BITS;
@@ -163,6 +162,8 @@ int PacketManager::unpack(std::vector<Packet> packets, byte **output) {
             _log->trace("Data bit {0:3}/{2:3}: {1}", i, 0, output_bit.size());
         }
     }
+
+    return bytes + 1;
 }
 
 // Use PacketManager::check() to verify the integrity of the packets before using this function
@@ -259,30 +260,12 @@ int PacketManager::receive(Packet &packet, int sqn, int scale, int long_timeout)
 
 int PacketManager::check(Packet packet, int sqn) {
     // check in main?
-    // TODO:
-    if (packet.isValid()) { //} && packet.hasSqn(sqn)){
+    if (packet.isValid() && packet.hasSqn(sqn)) {
         _log->debug("Packet ok");
         return 0;
     }
 
     return -1;
-}
-
-void PacketManager::printInfo() {
-    size_t sqn_bits = P_SQN_BITS;
-    int data_bits = P_DATA_BITS[_scale];
-
-    _log->debug("===== REQUEST =====");
-    _log->debug("= SQN: {0:2}bits => max sqn: {1}", sqn_bits, MAX_SQN);
-    _log->debug("= Encoded: {0:2}bits", _ecc->getEncodedSize(sqn_bits));
-    _log->debug("===================");
-    _log->debug("");
-    _log->debug("====== PACKET ======");
-    _log->debug("= DATA: {0:2}bit", data_bits);
-    _log->debug("= SQN : {0:2}bit", sqn_bits);
-    _log->debug("= EDC : {0:2}bit", _edc->calcOutputSize(P_DATA_BITS[_scale] + P_SQN_BITS + 1));
-    _log->debug("====================");
-    _log->debug("");
 }
 
 void PacketManager::wait(int cycle_count) {
