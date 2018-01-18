@@ -116,31 +116,11 @@ int HTS221::tryReadBit()
 	}
 	// temp was read => 0
 	if(isHumReady(status) && !isTempReady(status)){
-        // FIXME: wait a few ms, then read again to put less pressure on the bus
-		// reread a few times to confirm
-        /*
-        for (int i = 0; i < CONF; i++) {
-            getStatus(&status);
-			if(!isHumReady(status)){
-                _log->warn("Someone interfered?\n");
-			}
-		}*/
-
         _log->trace("Received bit 0");
 		return 0;
 	}
 	// hum was read => 1
 	if(isTempReady(status) && !isHumReady(status)){
-        // FIXME: wait a few ms, then read again to put less pressure on the bus
-		// reread a few times to confirm
-        /*
-        for (int i = 0; i < CONF; i++) {
-            getStatus(&status);
-			if(!isTempReady(status)){
-                _log->warn("Someone interfered?\n");
-			}
-		}*/
-
         _log->trace("Received bit 1");
 		return 1;
 	}
@@ -165,15 +145,12 @@ int HTS221::receive(uint8_t *data)
 			// wait until someone accesses the sensor results
 			do {
 				bit = tryReadBit();
-				//printf("[D] receive: bit = 0x%02x\n", bit);
 			} while(bit < 0);
 			
 			if(bit){
 				data[l] |= (1 << i);
-				//printf("[D] receive: received 1\n", data[l]);
 			}
 			else{
-				//printf("[D] receive: received 0\n", data[l]);
 			}
 		}
         _log->debug("receive: received 0x{0:2x}\n", data[l]);
