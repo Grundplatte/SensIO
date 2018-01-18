@@ -61,11 +61,12 @@ int main(int argc, char *argv[]) {
                 break;
 
             case RECEIVE:
-                result = manager->receive(packet, i, scale, CYCLE_DELAY);
+                result = manager->receive(packet, i, scale, 0);
 
                 // transition
                 if (result == 0) {
                     i++;
+                    manager->wait(1);
                     if (packet.isCommand()) {
                         switch (packet.getCommand()) {
                             case Packet::CMD_UP:
@@ -90,10 +91,10 @@ int main(int argc, char *argv[]) {
                     }
                 } else if (result == -1) {
                     state = RERECEIVE;
-                    manager->wait(1);
+                    //manager->wait(1);
                 } else if (result == -2) {
                     state = REQUEST;
-                    manager->wait(1);
+                    //manager->wait(1);
                 }
                 else
                     state = ERROR;
@@ -101,7 +102,7 @@ int main(int argc, char *argv[]) {
                 break;
 
             case RERECEIVE:
-                result = manager->receive(packet, i, scale, CYCLE_DELAY * 2);
+                result = manager->receive(packet, i, scale, 1);
 
                 // transition
                 if (result == 0) {
@@ -130,10 +131,10 @@ int main(int argc, char *argv[]) {
                     }
                 } else if (result == -1) {
                     state = RERECEIVE;
-                    manager->wait(1);
+                    //manager->wait(1);
                 } else if (result == -2) {
                     state = REQUEST;
-                    manager->wait(1);
+                    //manager->wait(1);
                 } else
                     state = ERROR;
 

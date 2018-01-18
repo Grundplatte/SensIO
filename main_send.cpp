@@ -66,11 +66,12 @@ int main(int argc, char *argv[]) {
                 break;
 
             case CHECK_FOR_SQN:
-                result = manager.checkForRequest(&sqn_had, CYCLE_DELAY);
+                result = manager.checkForRequest(&sqn_had, 0);
 
                 if (result == -2) {
+                    error_count++;
                     state = SEND_PACKET;
-                    manager.wait(1); // TODO: ??
+                    //manager.wait(1); // TODO: ??
                 } else if (result == -1) {
                     state = RECHECK_FOR_SQN;
                 } else if (result == 0)
@@ -79,11 +80,11 @@ int main(int argc, char *argv[]) {
                 break;
 
             case RECHECK_FOR_SQN:
-                result = manager.checkForRequest(&sqn_had, CYCLE_DELAY * 2);
+                result = manager.checkForRequest(&sqn_had, 1);
 
                 if (result == -2) {
                     state = SEND_PACKET;
-                    manager.wait(1); // TODO: ??
+                    //manager.wait(1); // TODO: ??
                 } else if (result == -1) {
                     state = RECHECK_FOR_SQN;
                 } else if (result == 0)
@@ -98,21 +99,12 @@ int main(int argc, char *argv[]) {
 
                 if (result < 0) {
                     log->warn("SQN not valid, check again.");
-                    state = CHECK_FOR_SQN;
+                    state = RECHECK_FOR_SQN;
                 } else if (result == (packetSqn - 1) % modSqn) // stop condition
                     state = STOP;
                 else if (result == (packetSqn) % modSqn) {
                     log->warn("Receiver requested the same packet again.");
-                    if (!next_packet.isCommand()) {
-                        // Packet may be too big, try scaling down
-                        error_count++;
-                        success_count = 0;
-                        if (factory.scaleDown() == 0) {
-                            factory.previous();
-                            factory.getCommandPacket(Packet::CMD_DOWN, packetSqn, next_packet);
-                            log->info("Packet size reduced");
-                        }
-                    }
+                    //manager.wait(1);
                     state = SEND_PACKET;
                 } else if (result == (packetSqn + 1) % modSqn) {
 
@@ -133,6 +125,7 @@ int main(int argc, char *argv[]) {
                     }
                     error_count = 0;
 
+                    manager.wait(1);
                     state = SEND_PACKET;
                 } else {
                     log->error("Receiver requested packet out of order!");
@@ -143,6 +136,16 @@ int main(int argc, char *argv[]) {
 
             case SEND_PACKET:
                 log->info("Sending packet {0}", packetSqn);
+                if (error_count > 0 && !next_packet.isCommand()) {
+                    // Packet may be too big, try scaling down
+                    error_count = 0;
+                    success_count = 0;
+                    if (factory.scaleDown() == 0) {
+                        factory.previous();
+                        factory.getCommandPacket(Packet::CMD_DOWN, packetSqn, next_packet);
+                        log->info("Packet size reduced");
+                    }
+                }
                 manager.send(next_packet);
                 state = CHECK_FOR_SQN;
                 break;

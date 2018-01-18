@@ -38,12 +38,12 @@ int HTS221::waitForSensReady()
 
     _log->trace("Waiting for sensor...");
 
-    for (int i = 0; i < CONF; i++) {
+    //for (int i = 0; i < CONF; i++) {
 		do {
             getStatus(&status);
             // TODO: if this takes more then a few cycles, check if sensor is active
 		} while(!isSensReady(status));
-	}
+    //}
 
     _log->trace("Ready...");
 	return 0;
@@ -118,12 +118,13 @@ int HTS221::tryReadBit()
 	if(isHumReady(status) && !isTempReady(status)){
         // FIXME: wait a few ms, then read again to put less pressure on the bus
 		// reread a few times to confirm
+        /*
         for (int i = 0; i < CONF; i++) {
             getStatus(&status);
 			if(!isHumReady(status)){
                 _log->warn("Someone interfered?\n");
 			}
-		}
+		}*/
 
         _log->trace("Received bit 0");
 		return 0;
@@ -132,12 +133,13 @@ int HTS221::tryReadBit()
 	if(isTempReady(status) && !isHumReady(status)){
         // FIXME: wait a few ms, then read again to put less pressure on the bus
 		// reread a few times to confirm
+        /*
         for (int i = 0; i < CONF; i++) {
             getStatus(&status);
 			if(!isTempReady(status)){
                 _log->warn("Someone interfered?\n");
 			}
-		}
+		}*/
 
         _log->trace("Received bit 1");
 		return 1;

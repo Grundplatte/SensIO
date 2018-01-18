@@ -48,7 +48,6 @@ int PacketManager::waitForRequest(byte *sqn_had) {
         // wait until someone accesses the sensor results
         do {
             bit = _sens->tryReadBit();
-            //printf("[D] receive: bit = %i\n", bit);
 
             clock_gettime(CLOCK_REALTIME, &stop);
             accum = stop.tv_nsec - start.tv_nsec;
@@ -74,10 +73,11 @@ int PacketManager::waitForRequest(byte *sqn_had) {
     return 0;
 }
 
-int PacketManager::checkForRequest(byte *sqn_had, int timeout) {
+int PacketManager::checkForRequest(byte *sqn_had, int long_timeout) {
     int bit;
     struct timespec start{}, stop{};
     double accum;
+    int timeout = long_timeout ? CYCLE_DELAY * 3 : CYCLE_DELAY * 2;
 
     *sqn_had = 0;
     int had_bitsize = _ecc->getEncodedSize(P_SQN_BITS);
@@ -108,12 +108,8 @@ int PacketManager::checkForRequest(byte *sqn_had, int timeout) {
             }
         } while (bit < 0);
 
-        if (bit) {
+        if (bit)
             *sqn_had |= (1 << i);
-            //printf("[D] receive: received 1\n");
-        } else {
-            //printf("[D] receive: received 0\n");
-        }
     }
 
     _log->debug("Received sqnHad: 0x{0:2x}", *sqn_had);
@@ -190,7 +186,6 @@ int PacketManager::send(Packet packet) {
 
     _log->debug("Sending {}bit packet.", packet.size());
     for (int i = 0; i < packet.size(); i++) {
-        //printf("[D] Sending bit %i/%i\n", i, packetBitSize);
 
         // wait until the sensor is ready
         _sens->waitForSensReady();
@@ -203,10 +198,11 @@ int PacketManager::send(Packet packet) {
     return 0;
 }
 
-int PacketManager::receive(Packet &packet, int sqn, int scale, int timeout) {
+int PacketManager::receive(Packet &packet, int sqn, int scale, int long_timeout) {
     int bit;
     struct timespec start{}, stop{};
     double accum;
+    int timeout = long_timeout ? CYCLE_DELAY * 3 : CYCLE_DELAY * 2;
 
     // packet size for normal packets
     size_t packet_bitsize =
@@ -231,14 +227,12 @@ int PacketManager::receive(Packet &packet, int sqn, int scale, int timeout) {
             }
 
             // timeout > delay ms
-            if (accum > timeout) {
-                if (i == 0) {
-                    _log->warn("Sender didnt start the transmission");
-                    return -2; // sender didnt start the transmission
-                } else {
-                    _log->warn("Timeout while receiving, trying again");
-                    return -1; // timeout (desync? => restart receive)
-                }
+            if (i != 0 && accum > CYCLE_DELAY) {
+                _log->warn("Timeout while receiving, trying again");
+                return -1;
+            } else if (accum > timeout) {
+                _log->warn("Sender didnt start the transmission");
+                return -2;
             }
         } while (bit < 0);
 
