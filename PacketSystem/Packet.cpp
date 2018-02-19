@@ -177,8 +177,8 @@ void Packet::printContents() {
             case CMD_STOP:
                 temp << " (CMD_STOP)";
                 break;
-            case CMD_RES:
-                temp << " (CMD_RES)";
+            case CMD_REV:
+                temp << " (CMD_REV)";
                 break;
             default:
                 temp << " (unknown)";

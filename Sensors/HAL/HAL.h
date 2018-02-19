@@ -23,4 +23,12 @@ public:
      * @return: (-1 on error, 0 otherwise)
      **/
     virtual int write(byte slave_addr, byte reg_addr, unsigned int length, byte *data) = 0;
+
+    /**
+     * Returns bus type
+     * @return: (-1 on error, 0 otherwise)
+     **/
+    //virtual int getBusType() = 0;
+
+    //static enum _bus_type = {A, B, C};
 };

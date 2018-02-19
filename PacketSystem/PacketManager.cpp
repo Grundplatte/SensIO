@@ -206,8 +206,7 @@ int PacketManager::receive(Packet &packet, int sqn, int scale, int long_timeout)
     int timeout = long_timeout ? CYCLE_DELAY * 3 : CYCLE_DELAY * 2;
 
     // packet size for normal packets
-    size_t packet_bitsize =
-            1 + P_DATA_BITS[scale] + P_SQN_BITS + _edc->calcOutputSize(P_DATA_BITS[scale] + P_SQN_BITS + 1);
+    size_t packet_bitsize = packet.getSize();
     _log->debug("Expecting {}bit packet.", packet_bitsize);
 
     // clean up
