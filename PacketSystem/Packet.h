@@ -21,7 +21,7 @@ public:
     static const int CMD_UP = 0;
     static const int CMD_DOWN = 1;
     static const int CMD_STOP = 2;
-    static const int CMD_RES = 3;
+    static const int CMD_REV = 3;
 
     Packet(std::vector<bit_t> data, int sqn);
 

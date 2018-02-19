@@ -15,7 +15,6 @@
 #include "HAL.h"
 
 #define I2C_INTERFACE "/dev/i2c-1"
-#define CONF 3
 #define MAX_READ_LEN 4
 #define MAX_WRITE_LEN 2
 
