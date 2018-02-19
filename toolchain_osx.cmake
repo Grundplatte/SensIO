@@ -1,0 +1,28 @@
+SET(CMAKE_SYSTEM_NAME Generic)
+set(CMAKE_SYSTEM_PROCESSOR arm)
+
+# directories
+SET(CC_DIR /Users/***/opt/armv8-rpi3-linux-gnueabihf)
+SET(CC_BIN ${CC_DIR}/bin)
+SET(CC_VERSION armv8-rpi3-linux-gnueabihf-)
+
+# flags
+#SET(CMAKE_C_FLAGS "--specs=nosys.specs")
+#SET(CMAKE_CXX_FLAGS "--specs=nosys.specs")
+#SET(CMAKE_EXE_LINKER_FLAGS "--specs=nosys.specs" CACHE INTERNAL "")
+
+# specify the cross compiler binaries
+SET(CMAKE_C_COMPILER ${CC_BIN}/${CC_VERSION}gcc)
+SET(CMAKE_CXX_COMPILER ${CC_BIN}/${CC_VERSION}g++)
+SET(CMAKE_ASM_COMPILER ${CC_BIN}/${CC_VERSION}as)
+SET(CMAKE_AR ${CC_BIN}/${CC_VERSION}ar)
+SET(CMAKE_RUNLIB ${CC_BIN}/${CC_VERSION}runlib)
+SET(CMAKE_STRIP ${CC_BIN}/${CC_VERSION}strip)
+
+# where is the target environment
+SET(CMAKE_FIND_ROOT_PATH ${CC_DIR}/armv8-rpi3-linux-gnueabihf)
+
+SET(CMAKE_FIND_ROOT_PATH_MODE_PROGRAM NEVER)
+SET(CMAKE_FIND_ROOT_PATH_MODE_LIBRARY ONLY)
+SET(CMAKE_FIND_ROOT_PATH_MODE_INCLUDE ONLY)
+set(CMAKE_FIND_ROOT_PATH_MODE_PACKAGE ONLY)
