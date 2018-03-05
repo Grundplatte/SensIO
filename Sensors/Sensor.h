@@ -2,6 +2,7 @@
 
 #include "../spdlog/spdlog.h"
 #include "../Defines.h"
+#include "HAL/HAL.h"
 
 namespace spd = spdlog;
 
@@ -46,4 +47,5 @@ public:
 
 protected:
     std::shared_ptr<spd::logger> _log;
+    std::shared_ptr<HAL> _hal;
 };

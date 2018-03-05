@@ -7,8 +7,8 @@
 
 PacketFactory::PacketFactory() {
     // <-- Log settings -->
-    std::shared_ptr<spdlog::logger> log = spd::get("PMgr");
-    _log = log ? log : spd::stdout_color_mt("PMgr");
+    std::shared_ptr<spdlog::logger> log = spd::get("PF");
+    _log = log ? log : spd::stdout_color_mt("PF");
 
     _next_packet_start = _data.begin();
     _last_packet_start = _data.begin();
@@ -16,8 +16,8 @@ PacketFactory::PacketFactory() {
 
 PacketFactory::PacketFactory(unsigned char *data_in, size_t length) {
     // <-- Log settings -->
-    std::shared_ptr<spdlog::logger> log = spd::get("PMgr");
-    _log = log ? log : spd::stdout_color_mt("PMgr");
+    std::shared_ptr<spdlog::logger> log = spd::get("PF");
+    _log = log ? log : spd::stdout_color_mt("PF");
 
     appendData(data_in, length);
 
@@ -26,12 +26,18 @@ PacketFactory::PacketFactory(unsigned char *data_in, size_t length) {
 }
 
 void PacketFactory::appendData(unsigned char *data_add, size_t length) {
+    int offset_next = std::distance(_next_packet_start, _data.begin());
+    int offset_last = std::distance(_last_packet_start, _data.begin());
+
     for (int i = 0; i < length; i++) {
         for (int l = 0; l < 8; l++) {
             _data.push_back((unsigned char) ((data_add[i] & (1 << l)) >> l));
             _log->trace("Data bit {0:3}/{2:3}: {1}", i * 8 + l, _data[i * 8 + l], length * 8);
         }
     }
+
+    _next_packet_start = _data.begin() + offset_next;
+    _last_packet_start = _data.begin() + offset_last;
 }
 
 int PacketFactory::getNextPacket(int sqn, Packet &ret) {
@@ -88,7 +94,8 @@ void PacketFactory::resetIterator() {
 }
 
 int PacketFactory::scaleUp() {
-    if (_scale < sizeof(P_DATA_BITS)) {
+    if (_scale < 4) { //sizeof(P_DATA_BITS)) {
+        _log->error("Size: " + sizeof(P_DATA_BITS));
         _scale++;
         return 0;
     }

@@ -2,6 +2,9 @@
 #include <bitset>
 #include "spdlog/spdlog.h"
 #include "PacketSystem/PacketManager.h"
+#include "TestBed.h"
+#include <fstream>
+#include <sys/mman.h>
 
 namespace spd = spdlog;
 
@@ -37,122 +40,23 @@ int main(int argc, char *argv[]) {
 
     log->info("Sender started.");
 
-    byte data[21] = "TESTaTESTbTESTcTESTd";
-    Packet next_packet;
-    byte sqn_had;
-    int result;
-    int error_count = 0;
-    int success_count = 0;
+    FILE *file = fopen("simple.bmp", "rb");
+    fseek(file, 0, SEEK_END);
+    long filesize = ftell(file);
+    fseek(file, 0, SEEK_SET);
 
-    PacketManager manager = PacketManager();
-    PacketFactory factory = PacketFactory(data, 21);
-    State state = WAIT_FOR_SQN;
+    unsigned char *filecontent = (unsigned char *) mmap(0, filesize, PROT_READ, MAP_PRIVATE, fileno(file), 0);
+    if (!filecontent)
+        exit(EXIT_FAILURE);
 
-    int packetSqn = -1;
-    int modSqn = MAX_SQN + 1;
+    TestBed testBed = TestBed();
+    testBed.setHAL(TestBed::HAL_I2C);
+    testBed.setSensor(TestBed::SENSOR_HTS221);
+    testBed.setRequestECC(TestBed::ECC_HADAMARD);
+    testBed.setPacketEDC(TestBed::EDC_BERGER);
+    testBed.setTestBuffer(filecontent, filesize);
 
-    while (true) {
-        switch (state) {
-            case ERROR:
-                log->critical("Error -> exiting.\n");
-                return -1;
+    testBed.runTest(true);
 
-            case WAIT_FOR_SQN:
-                result = manager.waitForRequest(&sqn_had);
-
-                if (result == 0)
-                    state = DECODE_SQN;
-
-                break;
-
-            case CHECK_FOR_SQN:
-                result = manager.checkForRequest(&sqn_had, 0);
-
-                if (result == -2) {
-                    error_count++;
-                    state = SEND_PACKET;
-                    //manager.wait(1); // TODO: ??
-                } else if (result == -1) {
-                    state = RECHECK_FOR_SQN;
-                } else if (result == 0)
-                    state = DECODE_SQN;
-
-                break;
-
-            case RECHECK_FOR_SQN:
-                result = manager.checkForRequest(&sqn_had, 1);
-
-                if (result == -2) {
-                    state = SEND_PACKET;
-                    //manager.wait(1); // TODO: ??
-                } else if (result == -1) {
-                    state = RECHECK_FOR_SQN;
-                } else if (result == 0)
-                    state = DECODE_SQN;
-
-                break;
-
-            case DECODE_SQN:
-                result = manager.checkRequest(&sqn_had);
-                //result = ecc->check(&sqnHad, 7);
-                //ecc->decode(&sqnHad, 8, &sqn);
-
-                if (result < 0) {
-                    log->warn("SQN not valid, check again.");
-                    state = RECHECK_FOR_SQN;
-                } else if (result == (packetSqn - 1) % modSqn) // stop condition
-                    state = STOP;
-                else if (result == (packetSqn) % modSqn) {
-                    log->warn("Receiver requested the same packet again.");
-                    //manager.wait(1);
-                    state = SEND_PACKET;
-                } else if (result == (packetSqn + 1) % modSqn) {
-
-                    result = factory.getNextPacket(++packetSqn, next_packet);
-                    if (result == -1) {
-                        // no packets left, send stop
-                        factory.getCommandPacket(Packet::CMD_STOP, packetSqn, next_packet);
-                        break;
-                    }
-
-                    if(success_count++ == P_TEST_UPSCALE){
-                        success_count = 0;
-                        if(factory.scaleUp() == 0){
-                            factory.previous();
-                            factory.getCommandPacket(Packet::CMD_UP, packetSqn, next_packet);
-                            log->info("Packet size increased");
-                        }
-                    }
-                    error_count = 0;
-
-                    manager.wait(1);
-                    state = SEND_PACKET;
-                } else {
-                    log->error("Receiver requested packet out of order!");
-                    state = STOP;
-                }
-
-                break;
-
-            case SEND_PACKET:
-                log->info("Sending packet {0}", packetSqn);
-                if (error_count > 0 && !next_packet.isCommand()) {
-                    // Packet may be too big, try scaling down
-                    error_count = 0;
-                    success_count = 0;
-                    if (factory.scaleDown() == 0) {
-                        factory.previous();
-                        factory.getCommandPacket(Packet::CMD_DOWN, packetSqn, next_packet);
-                        log->info("Packet size reduced");
-                    }
-                }
-                manager.send(next_packet);
-                state = CHECK_FOR_SQN;
-                break;
-
-            case STOP:
-                log->info("Stopping.");
-                return 0;
-        }
-    }
+    fclose(file);
 }

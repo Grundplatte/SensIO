@@ -10,19 +10,18 @@
 
 #include "../spdlog/spdlog.h"
 
-#include "../Sensors/HTS221.h"
 #include "../Defines.h"
 #include "ECC/ECC.h"
 #include "EDC/EDC.h"
 #include "Packet.h"
 #include "PacketFactory.h"
+#include "../Sensors/Sensor.h"
 
 namespace spd = spdlog;
 
 class PacketManager {
 public:
-    PacketManager();
-    ~PacketManager();
+    PacketManager(std::shared_ptr<ECC> ecc, std::shared_ptr<EDC> edc, std::shared_ptr<Sensor> sensor);
 
     /**
      * Wait until someone requests a packet (no initial timeout)
@@ -68,6 +67,8 @@ public:
      **/
     int receive(Packet &packet, int sqn, int scale, int long_timeout);
 
+    int unpack(std::vector<Packet> packets, byte *output, int output_len);
+
     /**
      * Unpacks a packet-stream (must be a valid packet)
      * @param packets: collection of packets
@@ -91,9 +92,9 @@ public:
     void wait(int cycle_count);
 
 private:
-    ECC *_ecc;
-    EDC *_edc;
-    Sensor *_sens;
+    std::shared_ptr<ECC> _ecc;
+    std::shared_ptr<EDC> _edc;
+    std::shared_ptr<Sensor> _sens;
     std::shared_ptr<spd::logger> _log;
 
     int _scale = P_INIT_SCALE;

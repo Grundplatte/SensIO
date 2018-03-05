@@ -32,6 +32,8 @@ public:
 
     int scaleDown();
 
+    bool isEmpty() { return _data.size(); }
+
 private:
     std::shared_ptr<spd::logger> _log;
 

@@ -9,9 +9,13 @@
 #include "wiringPiSPI.h"
 
 // Raspi has 3 SPI controllers. Header = SPI0
-#define SPI_INTERFACE "/dev/spidev0.0"
+#define SPI_INTERFACE_0 "/dev/spidev0.0"
+#define SPI_INTERFACE_1 "/dev/spidev0.1"
 
-class SPI_HAL : HAL {
+#define SPI_1MHZ 1000000
+#define SPI_10MHZ 10000000
+
+class SPI_HAL : public HAL {
 public:
     int read(byte slave_addr, byte regAddr, unsigned int length, byte *data) override;
 

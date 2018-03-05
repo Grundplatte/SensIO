@@ -8,6 +8,8 @@
 #include "../../Defines.h"
 
 class NoECC : public ECC {
+public:
+
     NoECC();
 
     ~NoECC();
@@ -18,7 +20,5 @@ class NoECC : public ECC {
 
     // only error detection
     int check(byte *input, size_t length) override;
-
-public:
     int getEncodedSize(size_t length) override;
 };

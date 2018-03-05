@@ -1,6 +1,7 @@
 #include <iostream>
 #include "spdlog/spdlog.h"
 #include "PacketSystem/PacketManager.h"
+#include "TestBed.h"
 
 typedef uint8_t byte;
 
@@ -38,119 +39,30 @@ int main(int argc, char *argv[]) {
 
     log->info("Receiver started.");
 
-    PacketManager *manager = new PacketManager();
-    std::vector<Packet> packets;
-    Packet packet;
-    int result;
-    int scale = 2;
+    // TODO: use dynamic buffer
+    FILE *file_temp = fopen("simple.bmp", "rb");
+    fseek(file_temp, 0, SEEK_END);
+    long filesize = ftell(file_temp);
+    fclose(file_temp);
 
-    State state = REQUEST;
-    int i = 0;
+    unsigned char *buf = (unsigned char *) malloc(filesize);
+    if (!buf)
+        exit(EXIT_FAILURE);
 
-    while (true) {
-        switch (state) {
-            case ERROR:
-                log->critical("Error -> exiting");
-                return -1;
+    log->info("Receiver started.");
 
-            case REQUEST:
-                manager->request(i);
-                state = RECEIVE;
-                break;
+    TestBed testBed = TestBed();
+    testBed.setHAL(TestBed::HAL_I2C);
+    testBed.setSensor(TestBed::SENSOR_HTS221);
+    testBed.setRequestECC(TestBed::ECC_HADAMARD);
+    testBed.setPacketEDC(TestBed::EDC_BERGER);
+    testBed.setTestBuffer(buf, filesize);
 
-            case RECEIVE:
-                result = manager->receive(packet, i, scale, 0);
+    testBed.runTest(false);
 
-                // transition
-                if (result == 0) {
-                    i++;
-                    manager->wait(1);
-                    if (packet.isCommand()) {
-                        switch (packet.getCommand()) {
-                            case Packet::CMD_UP:
-                                state = REQUEST;
-                                scale++;
-                                log->info("Scaling up to: {}", scale);
-                                break;
-                            case Packet::CMD_DOWN:
-                                state = REQUEST;
-                                scale--;
-                                log->info("Scaling down to: {}", scale);
-                                break;
-                            case Packet::CMD_STOP:
-                                state = STOP;
-                                break;
-                            default:
-                                state = REQUEST;
-                        }
-                    } else {
-                        packets.push_back(packet);
-                        state = REQUEST;
-                    }
-                } else if (result == -1) {
-                    state = RERECEIVE;
-                    //manager->wait(1);
-                } else if (result == -2) {
-                    state = REQUEST;
-                    //manager->wait(1);
-                }
-                else
-                    state = ERROR;
+    FILE *file = fopen("out.jpg", "wb");
+    fwrite(buf, sizeof(unsigned char), filesize, file);
+    fclose(file);
 
-                break;
-
-            case RERECEIVE:
-                result = manager->receive(packet, i, scale, 1);
-
-                // transition
-                if (result == 0) {
-                    i++;
-                    if (packet.isCommand()) {
-                        switch (packet.getCommand()) {
-                            case Packet::CMD_UP:
-                                state = REQUEST;
-                                scale++;
-                                log->info("Scaling up to: {}", scale);
-                                break;
-                            case Packet::CMD_DOWN:
-                                state = REQUEST;
-                                scale--;
-                                log->info("Scaling down to: {}", scale);
-                                break;
-                            case Packet::CMD_STOP:
-                                state = STOP;
-                                break;
-                            default:
-                                state = REQUEST;
-                        }
-                    } else {
-                        packets.push_back(packet);
-                        state = REQUEST;
-                    }
-                } else if (result == -1) {
-                    state = RERECEIVE;
-                    //manager->wait(1);
-                } else if (result == -2) {
-                    state = REQUEST;
-                    //manager->wait(1);
-                } else
-                    state = ERROR;
-
-                break;
-
-            case STOP:
-                log->info("Done. Stopping.");
-                manager->request(i - 2);
-
-                byte *output;
-                manager->unpack(packets, &output);
-                log->info("Unpacked: {}", output);
-                free(output);
-
-                return 0;
-
-            case IDLE:
-                break;
-        }
-    }
+    free(buf);
 }

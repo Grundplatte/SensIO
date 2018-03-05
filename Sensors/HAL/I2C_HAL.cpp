@@ -20,6 +20,9 @@ I2C_HAL::~I2C_HAL()
 
 int I2C_HAL::read(byte slave_addr, byte reg_addr, unsigned int length, byte *data)
 {
+    if (length > MAX_READ_LEN)
+        exit(EXIT_FAILURE);
+
 	int result;
     byte rx_buff[MAX_READ_LEN];
     struct i2c_msg msgs[2];

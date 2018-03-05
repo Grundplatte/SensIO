@@ -8,7 +8,6 @@
 #include <time.h>
 #include <string.h>
 
-#include "HAL/I2C_HAL.h"
 #include "Sensor.h"
 
 // HTS221
@@ -26,9 +25,7 @@
 
 class HTS221 : public Sensor {
 public:
-    HTS221();
-
-    ~HTS221();
+    HTS221(std::shared_ptr<HAL> hal);
 
     int isActive() override;
 
@@ -43,16 +40,13 @@ public:
     int sendReset() override;
 
     // not used
-    int send(byte *data, int length);
+    //int send(byte *data, int length);
 
-    int receive(byte *data);
+    //int receive(byte *data);
 
-    int detectUsage();
+    //int detectUsage();
 
 private:
-
-    I2C_HAL *_i2c;
-
     int isSensReady(uint8_t status);
     int isTempReady(uint8_t status);
     int isHumReady(uint8_t status);

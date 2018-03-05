@@ -45,6 +45,8 @@ public:
 
     std::vector<bit_t> getData();
 
+    int getSize();
+
     int getCommand();
 
     void printContents();

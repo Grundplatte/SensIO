@@ -29,6 +29,4 @@ public:
      * @return: (-1 on error, 0 otherwise)
      **/
     //virtual int getBusType() = 0;
-
-    //static enum _bus_type = {A, B, C};
 };

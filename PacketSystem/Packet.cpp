@@ -217,3 +217,7 @@ int Packet::getCommand() {
 
     return cmd;
 }
+
+int Packet::getSize() {
+    return _data_bits.size() + _edc_bits.size() + _sqn_bits.size();
+}

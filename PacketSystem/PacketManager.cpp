@@ -3,34 +3,17 @@
 #include <sstream>
 #include <iostream>
 #include "PacketManager.h"
-#include "ECC/Hadamard.h"
-#include "EDC/Berger.h"
 
 namespace spd = spdlog;
 
-PacketManager::PacketManager() {
-    // <-- Error correction code settings (for the sequence number) -->
-    _ecc = new Hadamard();
-    //m_ECC = new NoECC();
-
-    // <-- Error detection code settings (for the packet)-->
-    _edc = new Berger();
-    //m_EDC = new NoEDC();
-
-    // <-- Sensor settings -->
-    _sens = new HTS221();
+PacketManager::PacketManager(std::shared_ptr<ECC> ecc, std::shared_ptr<EDC> edc, std::shared_ptr<Sensor> sensor) : _ecc(
+        ecc), _edc(edc), _sens(sensor) {
     if (!_sens->isActive())
         _sens->toggleOnOff(1);
 
     // <-- Log settings -->
     std::shared_ptr<spdlog::logger> log = spd::get("PMgr");
     _log = log ? log : spd::stdout_color_mt("PMgr");
-}
-
-PacketManager::~PacketManager() {
-    delete (_edc);
-    delete (_ecc);
-    delete (_sens);
 }
 
 int PacketManager::waitForRequest(byte *sqn_had) {
@@ -146,6 +129,24 @@ int PacketManager::request(int sqn) {
     return 0;
 }
 
+int PacketManager::unpack(std::vector<Packet> packets, byte *output, int output_len) {
+    std::vector<bit_t> output_bit;
+    unpack(std::move(packets), output_bit);
+
+    memset(output, 0, output_len);
+
+    for (int i = 0; i < output_bit.size(); i++) {
+        if (output_bit[i]) {
+            output[i / 8] |= (1 << (i % 8));
+            _log->trace("Data bit {0:3}/{2:3}: {1}", i, 1, output_bit.size());
+        } else {
+            _log->trace("Data bit {0:3}/{2:3}: {1}", i, 0, output_bit.size());
+        }
+    }
+
+    return 1;
+}
+
 int PacketManager::unpack(std::vector<Packet> packets, byte **output) {
     std::vector<bit_t> output_bit;
     unpack(std::move(packets), output_bit);
@@ -206,7 +207,8 @@ int PacketManager::receive(Packet &packet, int sqn, int scale, int long_timeout)
     int timeout = long_timeout ? CYCLE_DELAY * 3 : CYCLE_DELAY * 2;
 
     // packet size for normal packets
-    size_t packet_bitsize = packet.getSize();
+    size_t packet_bitsize =
+            1 + P_DATA_BITS[scale] + P_SQN_BITS + _edc->calcOutputSize(P_DATA_BITS[scale] + P_SQN_BITS + 1);
     _log->debug("Expecting {}bit packet.", packet_bitsize);
 
     // clean up
@@ -277,11 +279,10 @@ void PacketManager::wait(int cycle_count) {
 }
 
 int PacketManager::checkRequest(byte *sqn_had) {
-    Hadamard ecc = Hadamard();
-    size_t had_length = (size_t) ecc.getEncodedSize(P_SQN_BITS);
+    size_t had_length = (size_t) _ecc->getEncodedSize(P_SQN_BITS);
     // error correction
     // return ecc.decode(sqnHad, hda_length, sqn)
 
     // error detection
-    return ecc.check(sqn_had, had_length);
+    return _ecc->check(sqn_had, had_length);
 }

@@ -19,7 +19,7 @@
 #define MAX_WRITE_LEN 2
 
 
-class I2C_HAL : HAL {
+class I2C_HAL : public HAL {
 public:
 
     int read(byte slave_addr, byte reg_addr, unsigned int length, byte *data) override;
