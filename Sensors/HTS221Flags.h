@@ -10,7 +10,7 @@
 
 #include "Sensor.h"
 
-// HTS221
+// HTS221Flags
 #define I2C_TEMP_ADDR 			0x5F
 #define I2C_TEMP_REG_WHO		0x0F
 #define I2C_TEMP_REG_CTRL1		0x20
@@ -23,9 +23,9 @@
 #define I2C_TEMP_REG_TMP_OUT_H	0x2B
 #define I2C_TEMP_REG_CALIB		0x30 // ...3F
 
-class HTS221 : public Sensor {
+class HTS221Flags : public Sensor {
 public:
-    HTS221(std::shared_ptr<HAL> hal);
+    HTS221Flags(std::shared_ptr<HAL> hal);
 
     int isActive() override;
 
@@ -35,9 +35,15 @@ public:
 
     int sendBit(bit_t bit) override;
 
-    int tryReadBit() override;
+    int sendByte(unsigned char byte) override;
+
+    int readBit(bool timeout, int long_timeout) override;
+
+    int readByte() override;
 
     int sendReset() override;
+
+    int supportsBytes() override;
 
     // not used
     //int send(byte *data, int length);
@@ -51,6 +57,9 @@ private:
     int isTempReady(uint8_t status);
     int isHumReady(uint8_t status);
     int getStatus(uint8_t *status);
+    int tryReadBit();
+
+    const unsigned int CYCLE_DELAY = (CYCLE_MS % 1000) * 1000000;
 };
 
 

@@ -16,35 +16,20 @@ PacketManager::PacketManager(std::shared_ptr<ECC> ecc, std::shared_ptr<EDC> edc,
     _log = log ? log : spd::stdout_color_mt("PMgr");
 }
 
-int PacketManager::waitForRequest(byte *sqn_had) {
-    int bit;
-    struct timespec start{}, stop{};
-    double accum;
+int PacketManager::waitForRequest(byte_t *sqn_had) {
+    return _sens->supportsBytes() ? waitForRequestByte(sqn_had) : waitForRequestBits(sqn_had);
+}
 
-    *sqn_had = 0;
+int PacketManager::waitForRequestBits(byte_t *sqn_had) {
+    int bit;
     int had_bitsize = _ecc->getEncodedSize(P_SQN_BITS);
 
+    *sqn_had = 0;
+
     for (int i = 0; i < had_bitsize; i++) {
-
-        _sens->waitForSensReady();
-        clock_gettime(CLOCK_REALTIME, &start);
-        // wait until someone accesses the sensor results
-        do {
-            bit = _sens->tryReadBit();
-
-            clock_gettime(CLOCK_REALTIME, &stop);
-            accum = stop.tv_nsec - start.tv_nsec;
-            // rollover
-            if (accum < 0) {
-                accum += 1000000000;
-            }
-
-            // timeout > delay ms (only relevant in transmission has already started)
-            if (i != 0 && accum > CYCLE_DELAY) {
-                _log->warn("[D] Timeout while receiving a sequence number ({0} bits)", i);
-                return -2;
-            }
-        } while (bit < 0);
+        bit = _sens->readBit(i==0, 0);
+        if(bit < 0)
+            return bit; // error
 
         if (bit) {
             *sqn_had |= (1 << i);
@@ -56,43 +41,35 @@ int PacketManager::waitForRequest(byte *sqn_had) {
     return 0;
 }
 
-int PacketManager::checkForRequest(byte *sqn_had, int long_timeout) {
+//TODO: support for multiple bytes?
+int PacketManager::waitForRequestByte(byte_t *sqn_had) {
+
+    int byte = _sens->readByte();
+
+    if(byte < 0)
+        return byte;
+
+    *sqn_had = static_cast<byte_t >(byte & 0xFF);
+
+    _log->debug("Received sqnHad: 0x{0:2x}", *sqn_had);
+
+    return 0;
+}
+
+int PacketManager::checkForRequest(byte_t *sqn_had, bool long_timeout) {
     int bit;
-    struct timespec start{}, stop{};
-    double accum;
-    int timeout = long_timeout ? CYCLE_DELAY * 3 : CYCLE_DELAY * 2;
 
     *sqn_had = 0;
     int had_bitsize = _ecc->getEncodedSize(P_SQN_BITS);
 
     for (int i = 0; i < had_bitsize; i++) {
+        bit = _sens->readBit(i, long_timeout ? 3 : 2);
+        if(bit < 0)
+            return bit; // error
 
-        _sens->waitForSensReady();
-        clock_gettime(CLOCK_REALTIME, &start);
-        // wait until someone accesses the sensor results
-        do {
-            bit = _sens->tryReadBit();
-            //printf("[D] receive: bit = %i\n", bit);
-
-            clock_gettime(CLOCK_REALTIME, &stop);
-            accum = stop.tv_nsec - start.tv_nsec;
-            // rollover
-            if (accum < 0) {
-                accum += 1000000000;
-            }
-
-            // timeout > delay ms (only relevant in transmission has already started)
-            if (i != 0 && accum > CYCLE_DELAY) {
-                _log->warn("Timeout while receiving a sequence number ({0} bits)", i);
-                return -1;
-            } else if (accum > timeout) {
-                _log->warn("Timeout while waiting for a sequence number");
-                return -2;
-            }
-        } while (bit < 0);
-
-        if (bit)
+        if (bit) {
             *sqn_had |= (1 << i);
+        }
     }
 
     _log->debug("Received sqnHad: 0x{0:2x}", *sqn_had);
@@ -106,10 +83,10 @@ int PacketManager::request(int sqn) {
 
     struct timespec req{}, rem{};
     req.tv_sec = 0;
-    req.tv_nsec = 40000000; // 160ms
+    req.tv_nsec = 40000000; // 40ms
 
-    byte sqn_had;
-    byte sqn_byte = (byte) (sqn % mod_sqn & 0xFF);
+    byte_t sqn_had;
+    byte_t sqn_byte = (byte_t) (sqn % mod_sqn & 0xFF);
     int had_bitsize = _ecc->encode(&sqn_byte, sqn_bits, &sqn_had);
 
     _log->info("Requesting packet {0}", sqn);
@@ -129,7 +106,7 @@ int PacketManager::request(int sqn) {
     return 0;
 }
 
-int PacketManager::unpack(std::vector<Packet> packets, byte *output, int output_len) {
+int PacketManager::unpack(std::vector<Packet> packets, byte_t *output, int output_len) {
     std::vector<bit_t> output_bit;
     unpack(std::move(packets), output_bit);
 
@@ -147,12 +124,12 @@ int PacketManager::unpack(std::vector<Packet> packets, byte *output, int output_
     return 1;
 }
 
-int PacketManager::unpack(std::vector<Packet> packets, byte **output) {
+int PacketManager::unpack(std::vector<Packet> packets, byte_t **output) {
     std::vector<bit_t> output_bit;
     unpack(std::move(packets), output_bit);
 
     size_t bytes = 1 + (output_bit.size() - 1) / 8;
-    (*output) = (byte *) malloc(bytes + 1);
+    (*output) = (byte_t *) malloc(bytes + 1);
     memset(*output, 0, bytes + 1);
 
     for (int i = 0; i < output_bit.size(); i++) {
@@ -183,15 +160,15 @@ int PacketManager::unpack(std::vector<Packet> packets, std::vector<bit_t> &outpu
 // send packet
 int PacketManager::send(Packet packet) {
     struct timespec req{}, rem{};
-    req.tv_sec = 0;
-    req.tv_nsec = WRITE_DELAY;
+    //req.tv_sec = 0;
+    //req.tv_nsec = WRITE_DELAY;
 
     _log->debug("Sending {}bit packet.", packet.size());
     for (int i = 0; i < packet.size(); i++) {
 
         // wait until the sensor is ready
         _sens->waitForSensReady();
-        nanosleep(&req, &rem);
+        //nanosleep(&req, &rem);
         _sens->sendBit(packet[i]);
     }
 
@@ -202,9 +179,6 @@ int PacketManager::send(Packet packet) {
 
 int PacketManager::receive(Packet &packet, int sqn, int scale, int long_timeout) {
     int bit;
-    struct timespec start{}, stop{};
-    double accum;
-    int timeout = long_timeout ? CYCLE_DELAY * 3 : CYCLE_DELAY * 2;
 
     // packet size for normal packets
     size_t packet_bitsize =
@@ -214,29 +188,9 @@ int PacketManager::receive(Packet &packet, int sqn, int scale, int long_timeout)
     // clean up
     std::vector<bit_t> tmp;
     for (int i = 0; i < packet_bitsize; i++) {
-        _sens->waitForSensReady();
-        clock_gettime(CLOCK_REALTIME, &start);
-
-        // wait until someone accesses the sensor results
-        do {
-            bit = _sens->tryReadBit();
-
-            clock_gettime(CLOCK_REALTIME, &stop);
-            accum = stop.tv_nsec - start.tv_nsec;
-            // rollover
-            if (accum < 0) {
-                accum += 1000000000;
-            }
-
-            // timeout > delay ms
-            if (i != 0 && accum > CYCLE_DELAY) {
-                _log->warn("Timeout while receiving, trying again");
-                return -1;
-            } else if (accum > timeout) {
-                _log->warn("Sender didnt start the transmission");
-                return -2;
-            }
-        } while (bit < 0);
+        bit = _sens->readBit(i, long_timeout ? 3 : 2);
+        if(bit < 0)
+            return bit; // error
 
         if (bit) {
             if (tmp.empty()) {
@@ -271,14 +225,14 @@ int PacketManager::check(Packet packet, int sqn) {
 
 void PacketManager::wait(int cycle_count) {
     // TODO: get cycletime from sensor
-    struct timespec req{}, rem{};
-    req.tv_sec = 0;
-    req.tv_nsec = (__syscall_slong_t) CYCLE_DELAY * cycle_count; // 80ms per cycle
+    //struct timespec req{}, rem{};
+    //req.tv_sec = 0;
+    //req.tv_nsec = (__syscall_slong_t) CYCLE_DELAY * cycle_count; // 80ms per cycle
 
-    nanosleep(&req, &rem);
+    //nanosleep(&req, &rem);
 }
 
-int PacketManager::checkRequest(byte *sqn_had) {
+int PacketManager::checkRequest(byte_t *sqn_had) {
     size_t had_length = (size_t) _ecc->getEncodedSize(P_SQN_BITS);
     // error correction
     // return ecc.decode(sqnHad, hda_length, sqn)

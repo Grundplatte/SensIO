@@ -14,11 +14,11 @@ public:
 
     ~NoECC();
 
-    int encode(byte *input, size_t length, byte *output) override;
+    int encode(byte_t *input, size_t length, byte_t *output) override;
 
-    int decode(byte *input, size_t length, byte *output) override;
+    int decode(byte_t *input, size_t length, byte_t *output) override;
 
     // only error detection
-    int check(byte *input, size_t length) override;
+    int check(byte_t *input, size_t length) override;
     int getEncodedSize(size_t length) override;
 };

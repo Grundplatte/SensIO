@@ -16,7 +16,7 @@ Hadamard::~Hadamard() = default;
  * generate 2/4/8bit code from 1/2/3bit sqn
  */
 
-int Hadamard::encode(byte *input, size_t length, byte *output) {
+int Hadamard::encode(byte_t *input, size_t length, byte_t *output) {
     int result;
 
     switch (length) {
@@ -44,7 +44,7 @@ int Hadamard::encode(byte *input, size_t length, byte *output) {
 }
 
 // simple version of decoder
-int Hadamard::decode(byte *input, size_t length, byte *output)
+int Hadamard::decode(byte_t *input, size_t length, byte_t *output)
 {
     unsigned char *H;
 
@@ -83,7 +83,7 @@ int Hadamard::decode(byte *input, size_t length, byte *output)
 }
 
 // TODO: support larger inputs
-int Hadamard::calcHamming(byte input1, byte input2)
+int Hadamard::calcHamming(byte_t input1, byte_t input2)
 {
     int ham = 0;
     for (int i = 0; i < 8; i++) {
@@ -111,7 +111,7 @@ int Hadamard::getEncodedSize(size_t length) {
     }
 }
 
-int Hadamard::check(byte *input, size_t length) {
+int Hadamard::check(byte_t *input, size_t length) {
 
     unsigned char *H;
     switch (length) {

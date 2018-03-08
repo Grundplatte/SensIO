@@ -32,14 +32,14 @@ public:
 	* input : input - input bit sequence (each element is 0 or 1)
 	* output : vector<byte> - encoded sequence
 	*/
-	std::vector<byte> encode(std::vector<byte> input);
+	std::vector<byte_t> encode(std::vector<byte_t> input);
 
 	/**
 	* desc. : decode the input sequence with the convolutional decoding using the Viterbi principal
 	* input : input - input byte sequence, where each byte corresponds to one output by the encoder (hence, max. 8 outputs in this way)
 	* output : vector<byte> - decoded sequence
 	*/
-	std::vector<byte> decode(std::vector<byte> input);
+	std::vector<byte_t> decode(std::vector<byte_t> input);
 
 
 	// <------------- CONSTRUCTOR AND DESTRUCTOR ------------->
@@ -56,21 +56,21 @@ private:
 	 * input : state - current state of the register, input - the desired input
 	 * output : byte - the next sequential state from the table
 	*/
-	byte getNextState(byte state, byte input);
+	byte_t getNextState(byte_t state, byte_t input);
 
 	/**
 	* desc. : get the next output of the encoder based on the state of registers and input
 	* input : state - current state of the register, input - the desired input
 	* output : byte - the output of the encoder (the predefined table)
 	*/
-	byte getOutput(byte state, byte input);
+	byte_t getOutput(byte_t state, byte_t input);
 
 	/**
 	* desc. : calculate the hamming distance between two bytes on the bit level
 	* input : val1 - first byte, val2 - second byte
 	* output : byte - resulted hamming distance value
 	*/
-	byte calcHammingDistance(byte val1, byte val2);
+	byte_t calcHammingDistance(byte_t val1, byte_t val2);
 
 	/**
 	* desc. : writes out the program information
@@ -80,13 +80,13 @@ private:
 	void startProcess();
 
 	/// Global state table for keeping the next sequential state of the current state depending on the input
-	std::vector<std::vector<byte > > state_table;
+	std::vector<std::vector<byte_t > > state_table;
 
 	/// Global output table for keeping the outputs of the current state depending on the input (* currently, only for n = 2 outputs programmed)
-	std::vector<std::vector<byte > > output_table;
+	std::vector<std::vector<byte_t > > output_table;
 	
 	/// Global table that gives inputs based on the current state and the sequential state (which is influenced by the defined input)
-	std::vector<std::vector<byte > > input_table;
+	std::vector<std::vector<byte_t > > input_table;
 
 };
 

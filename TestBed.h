@@ -23,7 +23,9 @@ public:
     static const int HAL_I2C = 0;
     static const int HAL_SPI = 1;
 
-    static const int SENSOR_HTS221 = 0;
+    static const int SENSOR_HTS221_FLAGS = 0;
+    static const int SENSOR_LPS25H_UNUSED = 1;
+    static const int SENSOR_HTS221_TOGGLE = 2;
 
     TestBed();
 

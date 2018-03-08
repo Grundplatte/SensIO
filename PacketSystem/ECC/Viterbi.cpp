@@ -17,9 +17,9 @@ void Viterbi::startProcess()
 Viterbi::Viterbi()
 {
 	// Because it is not possible to use define values direct on operations, they are written separately.
-	byte kPrim = k;
-	byte kOne = K;
-	byte counter = 0;
+	byte_t kPrim = k;
+	byte_t kOne = K;
+	byte_t counter = 0;
 
 	if (kPrim < 1)
 	{
@@ -40,7 +40,7 @@ Viterbi::Viterbi()
 	// The loop goes through every row (state) 2^(K-1) and updates it based on the shift of every specific input (2^k)
 	for(size_t i = 0; i < pow(2, kOne); i++)
 	{
-        vector<byte> temp;
+        vector<byte_t> temp;
 		
 		temp.resize(pow(2, kOne));
 		for (size_t j = 0; j < pow(2, kOne); j++)
@@ -49,11 +49,11 @@ Viterbi::Viterbi()
 		}
 		input_table.push_back(temp);
 
-        temp = vector<byte>();
+        temp = vector<byte_t>();
 
 		for (size_t j = 0; j < pow(2, kPrim); j++)
 		{
-			byte inp_val = j;
+			byte_t inp_val = j;
 			inp_val = inp_val << kOne;
 			inp_val = inp_val | counter;
 			inp_val = inp_val >> kPrim;
@@ -70,24 +70,24 @@ Viterbi::Viterbi()
 	// @TODO: Upgrade to be able to handle variable sized outputs
 
 	// .... to write ...
-	for (byte i = 0; i < pow(2, kOne); i++)
+	for (byte_t i = 0; i < pow(2, kOne); i++)
 	{
-        vector<byte> temp;
+        vector<byte_t> temp;
 
-		for (byte j = 0; j < pow(2, kPrim); j++)
+		for (byte_t j = 0; j < pow(2, kPrim); j++)
 		{
-			byte tempVal1 = j;
-			byte tempVal2 = j;
+			byte_t tempVal1 = j;
+			byte_t tempVal2 = j;
 
-			byte tempInner = tempVal1;
+			byte_t tempInner = tempVal1;
 
-			for (byte t = 0; t < kPrim - 1; t++)
+			for (byte_t t = 0; t < kPrim - 1; t++)
 			{
 				tempVal1 = (tempInner >> t & 1) ^ (tempInner >> (t + 1) & 1);
 				tempVal2 = (tempInner >> t & 1) ^ (tempInner >> (t + 1) & 1);
 			}
 
-			for(byte t = 0; t < kOne; t++)
+			for(byte_t t = 0; t < kOne; t++)
 			{
 				tempVal1 ^= (i >> t) & 1;
 				
@@ -110,18 +110,18 @@ Viterbi::Viterbi()
 
     cout << "   ";
 
-	for (byte j = 0; j < pow(2, kPrim); j++)
+	for (byte_t j = 0; j < pow(2, kPrim); j++)
 	{
         cout << (int) j << " ";
     }
 
     cout << endl;
 
-	for (byte i = 0; i < pow(2, kOne); i++)
+	for (byte_t i = 0; i < pow(2, kOne); i++)
 	{
         cout << (int) i << ": ";
 
-		for (byte j = 0; j < pow(2, kPrim); j++)
+		for (byte_t j = 0; j < pow(2, kPrim); j++)
 		{
             cout << (int) state_table.at(i).at(j) << " ";
 		}
@@ -134,18 +134,18 @@ Viterbi::Viterbi()
 
     cout << "   ";
 
-	for (byte j = 0; j < pow(2, kPrim); j++)
+	for (byte_t j = 0; j < pow(2, kPrim); j++)
 	{
         cout << (int) j << " ";
     }
 
     cout << endl;
 
-	for (byte i = 0; i < pow(2, kOne); i++)
+	for (byte_t i = 0; i < pow(2, kOne); i++)
 	{
         cout << (int) i << ": ";
 
-		for (byte j = 0; j < pow(2, kPrim); j++)
+		for (byte_t j = 0; j < pow(2, kPrim); j++)
 		{
             cout << (int) output_table.at(i).at(j) << " ";
 		}
@@ -158,18 +158,18 @@ Viterbi::Viterbi()
 
     cout << "    ";
 
-	for (byte j = 0; j < pow(2, kOne); j++)
+	for (byte_t j = 0; j < pow(2, kOne); j++)
 	{
         cout << (int) j << "  ";
     }
 
     cout << endl;
 
-	for (byte i = 0; i < pow(2, kOne); i++)
+	for (byte_t i = 0; i < pow(2, kOne); i++)
 	{
         cout << (int) i << " : ";
 
-		for (byte j = 0; j < pow(2, kOne); j++)
+		for (byte_t j = 0; j < pow(2, kOne); j++)
 		{
             cout << (int) input_table.at(i).at(j) << " ";
 		}
@@ -190,25 +190,25 @@ Viterbi::Viterbi()
 	//}
 }
 
-byte Viterbi::getNextState(byte state, byte input)
+byte_t Viterbi::getNextState(byte_t state, byte_t input)
 {
 	return state_table.at(state).at(input);
 }
 
-byte Viterbi::getOutput(byte state, byte input)
+byte_t Viterbi::getOutput(byte_t state, byte_t input)
 {
 	return output_table.at(state).at(input);
 }
 
-byte Viterbi::calcHammingDistance(byte val1, byte val2)
+byte_t Viterbi::calcHammingDistance(byte_t val1, byte_t val2)
 {
-	byte distance = 0;
+	byte_t distance = 0;
 
-	byte rez = val1 ^ val2;
+	byte_t rez = val1 ^ val2;
 
 	for (size_t i = 0; i < 8; i++)
 	{
-		byte temp;
+		byte_t temp;
 
 		temp = (rez >> i) & 1;
 
@@ -223,10 +223,10 @@ byte Viterbi::calcHammingDistance(byte val1, byte val2)
 
 // Takes in consideration that the input is a sequence of bits, where the output will be the same (hence, on the pre-encoder side, values need
 // to be transfored so that each byte of the vector is actually a bit)
-vector<byte> Viterbi::encode(vector<byte> input)
+vector<byte_t> Viterbi::encode(vector<byte_t> input)
 {
-	byte state = 0;
-    vector<byte> encoded;
+	byte_t state = 0;
+    vector<byte_t> encoded;
 
 	for (size_t i = 0; i < input.size(); i++)
 	{
@@ -254,9 +254,9 @@ vector<byte> Viterbi::encode(vector<byte> input)
 }
 
 
-vector<byte> Viterbi::decode(vector<byte> input) {
-    vector<vector<byte> > error_metric;
-    vector<vector<byte> > state_history;
+vector<byte_t> Viterbi::decode(vector<byte_t> input) {
+    vector<vector<byte_t> > error_metric;
+    vector<vector<byte_t> > state_history;
 
 	error_metric.resize(output_table.size());
 	state_history.resize(output_table.size());
@@ -267,15 +267,15 @@ vector<byte> Viterbi::decode(vector<byte> input) {
 		state_history.at(i).resize(input.size() +  1);
 	}
 
-    vector<byte> states(1);
-    vector<byte> tempVec;
+    vector<byte_t> states(1);
+    vector<byte_t> tempVec;
 
 	/* First, it is necessary to set two tables, one for error metric and the other for previous state history.
 	   Average error rate is calculated with the hamming distance, and always checked with the conflicting sate sequentions.  */
 
 	for (size_t i = 0; i < input.size(); i++)
 	{
-        tempVec = vector<byte>();
+        tempVec = vector<byte_t>();
 
         vector<bit_t> inputVerification(error_metric.size());
 
@@ -283,11 +283,11 @@ vector<byte> Viterbi::decode(vector<byte> input) {
 		{
 			for(size_t t = 0; t < output_table.at(0).size(); t++)
 			{
-				byte tempState = getNextState(states.at(j), t);
-				byte tempOutput = getOutput(states.at(j), t);
+				byte_t tempState = getNextState(states.at(j), t);
+				byte_t tempOutput = getOutput(states.at(j), t);
 
-				byte hamming = calcHammingDistance(tempOutput, input.at(i));
-				byte accumulated_metric = hamming;
+				byte_t hamming = calcHammingDistance(tempOutput, input.at(i));
+				byte_t accumulated_metric = hamming;
 				
 				if(i != 0)
 				{
@@ -324,11 +324,11 @@ vector<byte> Viterbi::decode(vector<byte> input) {
 
 	// <------------ Traceback ------------>
 
-    vector<byte> state_sequence(input.size() + 1);
-    vector<byte> decoded(input.size());
+    vector<byte_t> state_sequence(input.size() + 1);
+    vector<byte_t> decoded(input.size());
 
-	byte min = error_metric.at(0).at(error_metric.at(0).size() - 1);
-	byte minPos = 0;
+	byte_t min = error_metric.at(0).at(error_metric.at(0).size() - 1);
+	byte_t minPos = 0;
 
 	for(size_t i = 1; i < error_metric.size(); i++)
 	{

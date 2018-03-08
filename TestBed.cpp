@@ -9,7 +9,8 @@
 #include "PacketSystem/EDC/Berger.h"
 #include "Sensors/HAL/SPI_HAL.h"
 #include "Sensors/HAL/I2C_HAL.h"
-#include "Sensors/HTS221.h"
+#include "Sensors/HTS221Flags.h"
+#include "Sensors/LPS25HUnused.h"
 
 namespace spd = spdlog;
 
@@ -67,13 +68,17 @@ void TestBed::setSensor(int sensorType) {
     }
 
     switch (sensorType) {
-        case SENSOR_HTS221:
+        case SENSOR_HTS221_FLAGS:
             // FIXME: why cast?
-            _sensor = std::shared_ptr<Sensor>(new HTS221(_hal));
-            _log->trace("Sensor set to: HTS221");
+            _sensor = std::shared_ptr<Sensor>(new HTS221Flags(_hal));
+            _log->trace("Sensor set to: HTS221Flags");
+            break;
+        case SENSOR_LPS25H_UNUSED:
+            _sensor = std::shared_ptr<Sensor>(new LPS25HUnused(_hal));
+            _log->trace("Sensor set to: LPS25Unused");
             break;
         default:
-            _log->error("Unknown sensor type!");
+            _log->error("Unknown sensor/attack type!");
     }
 }
 
@@ -126,7 +131,7 @@ int TestBed::runTestSend() {
     _log->trace("runTestSend");
 
     Packet next_packet;
-    byte sqn_had;
+    byte_t sqn_had;
     int result;
     int error_count = 0;
     int success_count = 0;
@@ -214,7 +219,7 @@ int TestBed::runTestSend() {
                     }
                     error_count = 0;
 
-                    _pm->wait(1);
+                    //_pm->wait(1);
                     state = S_SEND_PACKET;
                 } else {
                     _log->error("Receiver requested packet out of order!");
@@ -273,7 +278,7 @@ int TestBed::runTestReceive() {
                 // transition
                 if (result == 0) {
                     i++;
-                    _pm->wait(1);
+                    //_pm->wait(1);
                     if (packet.isCommand()) {
                         switch (packet.getCommand()) {
                             case Packet::CMD_UP:

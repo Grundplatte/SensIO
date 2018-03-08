@@ -9,7 +9,7 @@
 #include <linux/spi/spidev.h>
 #include "SPI_HAL.h"
 
-int SPI_HAL::read(byte slave_addr, byte regAddr, unsigned int length, byte *data) {
+int SPI_HAL::read(byte_t slave_addr, byte_t regAddr, unsigned int length, byte_t *data) {
     int ret;
 
     struct spi_ioc_transfer tr[1] = {0,};
@@ -22,7 +22,7 @@ int SPI_HAL::read(byte slave_addr, byte regAddr, unsigned int length, byte *data
     return ret;
 }
 
-int SPI_HAL::write(byte slave_addr, byte reg_addr, unsigned int length, byte *data) {
+int SPI_HAL::write(byte_t slave_addr, byte_t reg_addr, unsigned int length, byte_t *data) {
 
 }
 

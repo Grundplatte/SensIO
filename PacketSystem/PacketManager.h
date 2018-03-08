@@ -28,14 +28,14 @@ public:
      * @param sqn_had: Hadamard encoded sequence number
      * @return: return 0 on success, -2 on timeout while receiving
      **/
-    int waitForRequest(byte *sqn_had);
+    int waitForRequest(byte_t *sqn_had);
 
     /**
      * Check if someone requests a packet
      * @param sqn_had: Hadamard encoded sequence number
      * @return: return 0 on success, -1 on initial timeout, -2 on timeout while receiving
      **/
-    int checkForRequest(byte *sqn_had, int long_timeout);
+    int checkForRequest(byte_t *sqn_had, bool long_timeout);
 
     /**
      * Request a packet using the sequence number sqn
@@ -49,7 +49,7 @@ public:
      * @param sqn: sequence number
      * @return: number of bits in sqn_had on success, -1 on error
      **/
-    int checkRequest(byte *sqn_had);
+    int checkRequest(byte_t *sqn_had);
 
     /**
      * Send a packet over the covert channel
@@ -67,7 +67,7 @@ public:
      **/
     int receive(Packet &packet, int sqn, int scale, int long_timeout);
 
-    int unpack(std::vector<Packet> packets, byte *output, int output_len);
+    int unpack(std::vector<Packet> packets, byte_t *output, int output_len);
 
     /**
      * Unpacks a packet-stream (must be a valid packet)
@@ -75,7 +75,7 @@ public:
      * @param output: buffer for the unpacked data
      * @return: output length in bytes
      **/
-    int unpack(std::vector<Packet> packets, byte **output);
+    int unpack(std::vector<Packet> packets, byte_t **output);
 
     /**
      * Unpacks a packet-stream (must be a valid packet)
@@ -100,4 +100,6 @@ private:
     int _scale = P_INIT_SCALE;
 
     int check(Packet packet, int sqn);
+    int waitForRequestBits(byte_t *sqn_had);
+    int waitForRequestByte(byte_t *sqn_had);
 };

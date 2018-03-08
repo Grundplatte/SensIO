@@ -1,32 +1,32 @@
-#include "HTS221.h"
+#include "HTS221Flags.h"
 
-HTS221::HTS221(std::shared_ptr<HAL> hal) {
-    std::shared_ptr<spdlog::logger> log = spd::get("HTS221");
-    _log = log ? log : spd::stdout_color_mt("HTS221");
+HTS221Flags::HTS221Flags(std::shared_ptr<HAL> hal) {
+    std::shared_ptr<spdlog::logger> log = spd::get("HTS221Flags");
+    _log = log ? log : spd::stdout_color_mt("HTS221Flags");
     _hal = hal;
 }
 
-int HTS221::isSensReady(byte status)
+int HTS221Flags::isSensReady(byte_t status)
 {
 	return (status & 0x03) == 0x03;
 }
-int HTS221::isTempReady(byte status)
+int HTS221Flags::isTempReady(byte_t status)
 {
 	return status & 0x01;
 }
-int HTS221::isHumReady(byte status)
+int HTS221Flags::isHumReady(byte_t status)
 {
 	return (status & 0x02)>>1;
 }
 
-int HTS221::getStatus(byte *status)
+int HTS221Flags::getStatus(byte_t *status)
 {
     return _hal->read(I2C_TEMP_ADDR, I2C_TEMP_REG_STATUS, 1, status);
 }
 
-int HTS221::waitForSensReady()
+int HTS221Flags::waitForSensReady()
 {
-	byte status;
+	byte_t status;
 
     _log->trace("Waiting for sensor...");
 
@@ -42,9 +42,9 @@ int HTS221::waitForSensReady()
 }
 
 // read temp = 0; read hum = 1;
-int HTS221::sendBit(bit_t bit)
+int HTS221Flags::sendBit(bit_t bit)
 {
-    byte data[2];
+    byte_t data[2];
 
     // 1
     if (bit) {
@@ -61,13 +61,13 @@ int HTS221::sendBit(bit_t bit)
     return 0;
 }
 
-int HTS221::isActive() {
-    byte data;
+int HTS221Flags::isActive() {
+    byte_t data;
 
     // read both (tmpout + humout) in one go
     _hal->read(I2C_TEMP_ADDR, I2C_TEMP_REG_CTRL1, 1, &data);
 
-    _log->trace("Sensor HTS221 data: 0x{0:2x}", data);
+    _log->trace("Sensor HTS221Flags data: 0x{0:2x}", data);
 
     if (data & 0x80) {
         // active
@@ -82,10 +82,10 @@ int HTS221::isActive() {
     return 0;
 }
 
-int HTS221::toggleOnOff(bit_t on_off) {
-    byte data;
+int HTS221Flags::toggleOnOff(bit_t on_off) {
+    byte_t data;
 
-    _log->trace("Sensor HTS221 toggle: {0}", on_off);
+    _log->trace("Sensor HTS221Flags toggle: {0}", on_off);
 
     if (on_off)
         data = 0x87;
@@ -97,9 +97,9 @@ int HTS221::toggleOnOff(bit_t on_off) {
     return 0;
 }
 
-int HTS221::sendReset()
+int HTS221Flags::sendReset()
 {
-    byte data[4];
+    byte_t data[4];
 
     // read both (tmpout + humout) in one go
     _hal->read(I2C_TEMP_ADDR, I2C_TEMP_REG_HUM_OUT_L + 0x80, 4, data);
@@ -111,9 +111,9 @@ int HTS221::sendReset()
  * Sending functions
  */
 
-int HTS221::tryReadBit()
+int HTS221Flags::tryReadBit()
 {
-    byte status;
+    byte_t status;
     getStatus(&status);
 
 	// nothing read
@@ -135,9 +135,56 @@ int HTS221::tryReadBit()
 	return -2;
 }
 
+int HTS221Flags::supportsBytes() {
+    return 0;
+}
+
+int HTS221Flags::readByte() {
+    _log->error("Attack does not support bytes.");
+    exit(EXIT_FAILURE);
+}
+
+int HTS221Flags::sendByte(unsigned char byte) {
+    _log->error("Attack does not support bytes.");
+    exit(EXIT_FAILURE);
+}
+
+int HTS221Flags::readBit(bool timeout, int long_timeout) {
+    struct timespec start{}, stop{};
+    double accum;
+    int bit;
+    int LONG_DELAY = long_timeout * CYCLE_DELAY;
+
+    waitForSensReady();
+    clock_gettime(CLOCK_REALTIME, &start);
+    // wait until someone accesses the sensor results
+    do {
+        bit = tryReadBit();
+
+        clock_gettime(CLOCK_REALTIME, &stop);
+        accum = stop.tv_nsec - start.tv_nsec;
+        // rollover
+        if (accum < 0) {
+            accum += 1000000000;
+        }
+
+        // timeout > delay ms (only relevant in transmission has already started)
+        if (timeout && accum > CYCLE_DELAY) {
+            _log->warn("[D] Timeout while receiving a sequence number");
+
+            return -2;
+        }else if(long_timeout && accum > LONG_DELAY){
+            _log->warn("[D] Timeout while waiting for a sequence number");
+            return -1;
+        }
+    } while (bit < 0);
+
+    return bit;
+}
+
 /*
 // send raw data
-int HTS221::send(byte *data, int length)
+int HTS221Flags::send(byte *data, int length)
 {
     byte bit;
     bit = 0x01;
@@ -159,7 +206,7 @@ int HTS221::send(byte *data, int length)
 }
 
 
-int HTS221::receive(uint8_t *data)
+int HTS221Flags::receive(uint8_t *data)
 {
     int bit;
 
@@ -187,7 +234,7 @@ int HTS221::receive(uint8_t *data)
 // TODO: timeout after xx sec/min
 // TODO: try to find pattern
 // TODO: adjust access times
-int HTS221::detectUsage()
+int HTS221Flags::detectUsage()
 {
     byte status;
     struct timespec *time1p, *time2p, *temp, time1{}, time2{};

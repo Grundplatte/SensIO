@@ -18,7 +18,7 @@ public:
      * @param output: encoded payload
      * @return: output length in bit (-1 on error)
      **/
-    virtual int encode(byte *input, size_t length, byte *output) = 0;
+    virtual int encode(byte_t *input, size_t length, byte_t *output) = 0;
 
     /**
      * Try to decode the encoded payload
@@ -27,9 +27,9 @@ public:
      * @param output: decoded payload
      * @return: output length in bit (-1 on error)
      **/
-    virtual int decode(byte *input, size_t length, byte *output) = 0;
+    virtual int decode(byte_t *input, size_t length, byte_t *output) = 0;
 
-    virtual int check(byte *input, size_t length) = 0;
+    virtual int check(byte_t *input, size_t length) = 0;
 
     virtual int getEncodedSize(size_t) = 0;
 

@@ -18,13 +18,13 @@ I2C_HAL::~I2C_HAL()
 	}
 }
 
-int I2C_HAL::read(byte slave_addr, byte reg_addr, unsigned int length, byte *data)
+int I2C_HAL::read(byte_t slave_addr, byte_t reg_addr, unsigned int length, byte_t *data)
 {
     if (length > MAX_READ_LEN)
         exit(EXIT_FAILURE);
 
 	int result;
-    byte rx_buff[MAX_READ_LEN];
+    byte_t rx_buff[MAX_READ_LEN];
     struct i2c_msg msgs[2];
     struct i2c_rdwr_ioctl_data ioctl_data{};
 
@@ -46,10 +46,10 @@ int I2C_HAL::read(byte slave_addr, byte reg_addr, unsigned int length, byte *dat
 	return result;
 }
 
-int I2C_HAL::write(byte slave_addr, byte reg_addr, unsigned int length, byte *data)
+int I2C_HAL::write(byte_t slave_addr, byte_t reg_addr, unsigned int length, byte_t *data)
 {
 	int result;
-    byte tx_buff[MAX_WRITE_LEN];
+    byte_t tx_buff[MAX_WRITE_LEN];
     struct i2c_msg msgs[2];
     struct i2c_rdwr_ioctl_data ioctl_data{};
 
@@ -58,7 +58,7 @@ int I2C_HAL::write(byte slave_addr, byte reg_addr, unsigned int length, byte *da
     msgs[0].addr = slave_addr;
 	msgs[0].flags = 0x00;
 	msgs[0].len = 1 + length;
-	msgs[0].buf = (byte *) malloc(1 + length);
+	msgs[0].buf = (byte_t *) malloc(1 + length);
 
     msgs[0].buf[0] = reg_addr;
 	memcpy(msgs[0].buf + 1, data, length);

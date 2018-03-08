@@ -22,11 +22,12 @@ int main(int argc, char *argv[]) {
     std::shared_ptr<spd::logger> log;
     log = spd::stdout_color_mt("main");
     spd::set_pattern("[%M:%S.%e] [%l] [%n] %v");
+    char *filename;
 
     /*** SET DEBUG LEVEL ***/
     int c;
     spd::set_level(spd::level::info);
-    while ((c = getopt(argc, argv, "dt")) != -1)
+    while ((c = getopt(argc, argv, "dti:")) != -1)
         switch (c) {
             case 'd':
                 spd::set_level(spd::level::debug);
@@ -34,13 +35,16 @@ int main(int argc, char *argv[]) {
             case 't':
                 spd::set_level(spd::level::trace);
                 break;
+            case 'i':
+                filename = optarg;
+                break;
             default:
                 abort();
         }
 
     log->info("Sender started.");
 
-    FILE *file = fopen("simple.bmp", "rb");
+    FILE *file = fopen(filename, "rb");
     fseek(file, 0, SEEK_END);
     long filesize = ftell(file);
     fseek(file, 0, SEEK_SET);
@@ -51,7 +55,7 @@ int main(int argc, char *argv[]) {
 
     TestBed testBed = TestBed();
     testBed.setHAL(TestBed::HAL_I2C);
-    testBed.setSensor(TestBed::SENSOR_HTS221);
+    testBed.setSensor(TestBed::SENSOR_HTS221_FLAGS);
     testBed.setRequestECC(TestBed::ECC_HADAMARD);
     testBed.setPacketEDC(TestBed::EDC_BERGER);
     testBed.setTestBuffer(filecontent, filesize);

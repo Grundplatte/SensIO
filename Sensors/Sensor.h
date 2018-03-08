@@ -33,17 +33,25 @@ public:
      **/
     virtual int sendBit(bit_t bit) = 0;
 
+    virtual int sendByte(unsigned char byte) = 0;
+
     /**
-     * Try to read a bit from the covert channel
+     * Read a bit from the covert channel
+     * @param timeout: use timeout (only used during a transmission, not for the first bit)
+     * @param long_timeout: 0...disabled, otherwise X * normal timeout (usually 2 or 3)
      * @return: -1 on error, 0 or 1 otherwise (depending on transmitted bit)
      **/
-    virtual int tryReadBit() = 0;
+    virtual int readBit(bool timeout, int long_timeout) = 0;
+
+    virtual int readByte() = 0;
 
     /**
      * Send a reset (read both result registers)
      * @return: (-1 on error, 0 otherwise)
      **/
     virtual int sendReset() = 0;
+
+    virtual int supportsBytes() = 0;
 
 protected:
     std::shared_ptr<spd::logger> _log;
