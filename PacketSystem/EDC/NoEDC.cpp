@@ -14,14 +14,14 @@ NoEDC::~NoEDC() = default;
 
 
 int NoEDC::generate(std::vector<bit_t> input, std::vector<bit_t> &output) {
-    output = input;
+    output.clear();
     return output.size();
 }
 
 int NoEDC::check(std::vector<bit_t> input, std::vector<bit_t> edc_in) {
-    return 0;
+    return 1;
 }
 
 int NoEDC::calcOutputSize(unsigned int length) {
-    return length;
+    return 0;
 }

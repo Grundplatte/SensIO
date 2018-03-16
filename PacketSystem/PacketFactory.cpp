@@ -5,7 +5,9 @@
 #include "PacketFactory.h"
 #include "../spdlog/spdlog.h"
 
-PacketFactory::PacketFactory() {
+int PacketFactory::_scale = P_INIT_SCALE;
+
+PacketFactory::PacketFactory(std::shared_ptr<EDC> edc): _edc(edc) {
     // <-- Log settings -->
     std::shared_ptr<spdlog::logger> log = spd::get("PF");
     _log = log ? log : spd::stdout_color_mt("PF");
@@ -14,7 +16,7 @@ PacketFactory::PacketFactory() {
     _last_packet_start = _data.begin();
 }
 
-PacketFactory::PacketFactory(unsigned char *data_in, size_t length) {
+PacketFactory::PacketFactory(unsigned char *data_in, size_t length, std::shared_ptr<EDC> edc) : _edc(edc) {
     // <-- Log settings -->
     std::shared_ptr<spdlog::logger> log = spd::get("PF");
     _log = log ? log : spd::stdout_color_mt("PF");
@@ -52,9 +54,8 @@ int PacketFactory::getNextPacket(int sqn, Packet &ret) {
     // TODO: testing scaledown if not much data left (needs better logic)
     int dist = std::distance(_next_packet_start, _data.end());
     _log->debug("Data left: {}", dist);
-    if (dist * 3 < P_DATA_BITS[_scale]) {
-        scaleDown();
-        ret = Packet(Packet::CMD_DOWN, sqn);
+    if (dist * 3 < P_DATA_BITS[_scale] && scaleDown() == 0) {
+        ret = Packet(Packet::CMD_DOWN, sqn, _edc);
         return 0;
     }
 
@@ -72,7 +73,7 @@ int PacketFactory::getNextPacket(int sqn, Packet &ret) {
         next_packet_count++;
     }
 
-    ret = Packet(tmp, sqn);
+    ret = Packet(tmp, sqn, _edc);
     return 0;
 }
 
@@ -85,7 +86,7 @@ int PacketFactory::getCommandPacket(int cmd, int sqn, Packet &ret) {
     if (cmd < 0 || cmd > 3)
         return -1;
 
-    ret = Packet(cmd, sqn);
+    ret = Packet(cmd, sqn, _edc);
     return 0;
 }
 
@@ -94,18 +95,23 @@ void PacketFactory::resetIterator() {
 }
 
 int PacketFactory::scaleUp() {
-    if (_scale < 4) { //sizeof(P_DATA_BITS)) {
-        _log->error("Size: " + sizeof(P_DATA_BITS));
+    /*
+    if (_scale < 4) {
         _scale++;
         return 0;
-    }
+    }*/
     return -1;
 }
 
 int PacketFactory::scaleDown() {
+    /*
     if (_scale > 0) {
         _scale--;
         return 0;
-    }
+    }*/
     return -1;
+}
+
+int PacketFactory::getScale() {
+    return _scale;
 }

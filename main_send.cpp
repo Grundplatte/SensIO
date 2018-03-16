@@ -55,9 +55,9 @@ int main(int argc, char *argv[]) {
 
     TestBed testBed = TestBed();
     testBed.setHAL(TestBed::HAL_I2C);
-    testBed.setSensor(TestBed::SENSOR_HTS221_FLAGS);
+    testBed.setSensor(TestBed::SENSOR_LPS25H_UNUSED);
     testBed.setRequestECC(TestBed::ECC_HADAMARD);
-    testBed.setPacketEDC(TestBed::EDC_BERGER);
+    testBed.setPacketEDC(TestBed::EDC_NOEDC);
     testBed.setTestBuffer(filecontent, filesize);
 
     testBed.runTest(true);

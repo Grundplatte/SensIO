@@ -9,6 +9,7 @@
 #include <vector>
 #include "../Defines.h"
 #include "../spdlog/logger.h"
+#include "EDC/EDC.h"
 
 namespace spd = spdlog;
 
@@ -23,11 +24,11 @@ public:
     static const int CMD_STOP = 2;
     static const int CMD_REV = 3;
 
-    Packet(std::vector<bit_t> data, int sqn);
+    Packet(std::vector<bit_t> data, int sqn, std::shared_ptr<EDC> _edc);
 
-    Packet(int cmd, int sqn);
+    Packet(int cmd, int sqn, std::shared_ptr<EDC> _edc);
 
-    Packet();
+    Packet(std::shared_ptr<EDC> _edc);
 
     int size();
 
@@ -59,6 +60,8 @@ private:
     std::vector<bit_t> _data_bits;
     std::vector<bit_t> _sqn_bits;
     std::vector<bit_t> _edc_bits;
+
+    std::shared_ptr<EDC> _edc;
 
     int _sqn;
     bit_t _type;

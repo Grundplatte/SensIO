@@ -7,12 +7,12 @@
 #include "EDC/Berger.h"
 
 
-Packet::Packet() {
+Packet::Packet(std::shared_ptr<EDC> edc) : _edc(edc) {
     std::shared_ptr<spdlog::logger> log = spd::get("Packet");
     _log = log ? log : spd::stdout_color_mt("Packet");
 }
 
-Packet::Packet(std::vector<bit_t> data, int sqn) : _data_bits(std::move(data)), _sqn(sqn), _type(TYPE_DATA) {
+Packet::Packet(std::vector<bit_t> data, int sqn, std::shared_ptr<EDC> edc) : _data_bits(std::move(data)), _sqn(sqn), _type(TYPE_DATA), _edc(edc) {
     // construct data packet
     // <-- Log settings -->
     std::shared_ptr<spdlog::logger> log = spd::get("Packet");
@@ -22,7 +22,7 @@ Packet::Packet(std::vector<bit_t> data, int sqn) : _data_bits(std::move(data)), 
     updateEDC();
 }
 
-Packet::Packet(int cmd, int sqn) : _sqn(sqn), _type(TYPE_CMD) {
+Packet::Packet(int cmd, int sqn, std::shared_ptr<EDC> edc) : _sqn(sqn), _type(TYPE_CMD), _edc(edc) {
     // construct cmd packet (always 2bit data)
     // <-- Log settings -->
     std::shared_ptr<spdlog::logger> log = spd::get("Packet");
@@ -72,24 +72,38 @@ void Packet::fromBits(std::vector<bit_t> input, int scale) {
         _data_bits.insert(_data_bits.end(), input.begin() + 1, input.begin() + P_DATA_BITS[scale] + 1);
         _sqn_bits.insert(_sqn_bits.end(), input.begin() + P_DATA_BITS[scale] + 1,
                         input.begin() + P_DATA_BITS[scale] + P_SQN_BITS + 1);
-        _edc_bits.insert(_edc_bits.end(), input.begin() + P_DATA_BITS[scale] + P_SQN_BITS + 1, input.end());
+
+        int edc_size = _edc->calcOutputSize(_data_bits.size() + _sqn_bits.size() + 1);
+        _edc_bits.insert(_edc_bits.end(), input.begin() + P_DATA_BITS[scale] + P_SQN_BITS + 1,
+                         input.begin() + P_DATA_BITS[scale] + P_SQN_BITS + 1 + edc_size);
     } else if (_type == TYPE_CMD) {
         _data_bits.insert(_data_bits.end(), input.begin() + 1, input.begin() + P_CMD_BITS + 1);
         _sqn_bits.insert(_sqn_bits.end(), input.begin() + P_CMD_BITS + 1, input.begin() + P_CMD_BITS + P_SQN_BITS + 1);
-        _edc_bits.insert(_edc_bits.end(), input.begin() + P_CMD_BITS + P_SQN_BITS + 1, input.end());
+
+        Berger edc;
+        int edc_size = edc.calcOutputSize(_data_bits.size() + _sqn_bits.size() + 1);
+        _edc_bits.insert(_edc_bits.end(), input.begin() + P_CMD_BITS + P_SQN_BITS + 1,
+                         input.begin() + P_CMD_BITS + P_SQN_BITS + 1 + edc_size);
     }
 
     _sqn = -1;
 }
 
 void Packet::updateEDC() {
-    EDC *edc = new Berger();
     std::vector<bit_t> tmp(_data_bits);
     tmp.insert(tmp.end(), _sqn_bits.begin(), _sqn_bits.end());
     tmp.insert(tmp.begin(), _type);
 
     _edc_bits.clear();
-    edc->generate(tmp, _edc_bits);
+
+    // FIX: allways use edc for command packets
+    if(isCommand()){
+        Berger edc;
+        edc.generate(tmp, _edc_bits);
+    }
+    else{
+        _edc->generate(tmp, _edc_bits);
+    }
 }
 
 void Packet::updateSQN() {
@@ -116,12 +130,18 @@ bit_t const &Packet::operator[](int index) {
 }
 
 int Packet::isValid() {
-    EDC *edc = new Berger();
     std::vector<bit_t> tmp(_data_bits);
     tmp.insert(tmp.end(), _sqn_bits.begin(), _sqn_bits.end());
     tmp.insert(tmp.begin(), _type);
 
-    int check = edc->check(tmp, _edc_bits);
+    int check;
+    if(isCommand()){
+        Berger edc;
+        check = edc.check(tmp, _edc_bits);
+    }
+    else {
+        check = _edc->check(tmp, _edc_bits);
+    }
 
     return (check == 1 ? 1 : 0);
 }

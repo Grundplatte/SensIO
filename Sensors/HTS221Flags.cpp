@@ -45,6 +45,12 @@ int HTS221Flags::waitForSensReady()
 int HTS221Flags::sendBit(bit_t bit)
 {
     byte_t data[2];
+    struct timespec req{}, rem{};
+    req.tv_sec = 0;
+    req.tv_nsec = WRITE_DELAY;
+
+    waitForSensReady();
+    nanosleep(&req, &rem);
 
     // 1
     if (bit) {
@@ -170,16 +176,23 @@ int HTS221Flags::readBit(bool timeout, int long_timeout) {
 
         // timeout > delay ms (only relevant in transmission has already started)
         if (timeout && accum > CYCLE_DELAY) {
-            _log->warn("[D] Timeout while receiving a sequence number");
-
-            return -2;
+            _log->warn("[D] Timeout while receiving");
+            return TIMEOUT_WHILE_RECEIVING;
         }else if(long_timeout && accum > LONG_DELAY){
-            _log->warn("[D] Timeout while waiting for a sequence number");
-            return -1;
+            _log->warn("[D] Timeout while waiting");
+            return TIMEOUT_WHILE_WAITING;
         }
     } while (bit < 0);
 
     return bit;
+}
+
+void HTS221Flags::wait(int cycle_count) {
+    struct timespec req{}, rem{};
+    req.tv_sec = 0;
+    req.tv_nsec = (__syscall_slong_t) CYCLE_DELAY * cycle_count; // 80ms per cycle
+
+    nanosleep(&req, &rem);
 }
 
 /*

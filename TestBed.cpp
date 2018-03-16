@@ -3,7 +3,6 @@
 //
 
 #include "TestBed.h"
-#include "PacketSystem/ECC/NoECC.h"
 #include "PacketSystem/EDC/NoEDC.h"
 #include "PacketSystem/ECC/Hadamard.h"
 #include "PacketSystem/EDC/Berger.h"
@@ -14,12 +13,10 @@
 
 namespace spd = spdlog;
 
+int TestBed::TYPE = -1;
+
 void TestBed::setRequestECC(int type) {
     switch (type) {
-        case ECC_NOECC:
-            _requestECC = std::shared_ptr<ECC>(new NoECC());
-            _log->trace("Request ecc set to: NoECC");
-            break;
         case ECC_HADAMARD:
             _requestECC = std::shared_ptr<ECC>(new Hadamard());
             _log->trace("Request ecc set to: Hadamard");
@@ -111,8 +108,10 @@ int TestBed::runTest(bool send) {
         return -1;
     }
     _pm = std::unique_ptr<PacketManager>(new PacketManager(_requestECC, _packetEDC, _sensor));
-    _pf = std::unique_ptr<PacketFactory>(new PacketFactory());
+    _pf = std::unique_ptr<PacketFactory>(new PacketFactory(_packetEDC));
 
+
+    TYPE = send;
 
     // run tests
     if (send)
@@ -130,7 +129,7 @@ TestBed::TestBed() {
 int TestBed::runTestSend() {
     _log->trace("runTestSend");
 
-    Packet next_packet;
+    Packet next_packet(_packetEDC);
     byte_t sqn_had;
     int result;
     int error_count = 0;
@@ -154,22 +153,29 @@ int TestBed::runTestSend() {
             case S_WAIT_FOR_SQN:
                 result = _pm->waitForRequest(&sqn_had);
 
-                if (result == 0)
+                if (result == STATUS_OK){
                     state = S_DECODE_SQN;
+                    clock_gettime(CLOCK_REALTIME, &_start_time); //FIXME: does not work if user is present before receiver
+                }
 
                 break;
 
             case S_CHECK_FOR_SQN:
                 result = _pm->checkForRequest(&sqn_had, 0);
 
-                if (result == -2) {
+                if (result == TIMEOUT_WHILE_WAITING) {
                     error_count++;
+                    _retrans_count++;
                     state = S_SEND_PACKET;
                     //manager.wait(1); // TODO: ??
-                } else if (result == -1) {
+                } else if (result == TIMEOUT_WHILE_RECEIVING) {
+                    _packet_count++;
+                    _retrans_count++;
                     state = S_RECHECK_FOR_SQN;
-                } else if (result == 0)
+                } else if (result == STATUS_OK){
+                    _packet_count++;
                     state = S_DECODE_SQN;
+                }
 
                 break;
 
@@ -178,7 +184,6 @@ int TestBed::runTestSend() {
 
                 if (result == -2) {
                     state = S_SEND_PACKET;
-                    //manager.wait(1); // TODO: ??
                 } else if (result == -1) {
                     state = S_RECHECK_FOR_SQN;
                 } else if (result == 0)
@@ -187,9 +192,7 @@ int TestBed::runTestSend() {
                 break;
 
             case S_DECODE_SQN:
-                result = _pm->checkRequest(&sqn_had);
-                //result = ecc->check(&sqnHad, 7);
-                //ecc->decode(&sqnHad, 8, &sqn);
+                result = _pm->validateRequest(&sqn_had);
 
                 if (result < 0) {
                     _log->warn("SQN not valid, check again.");
@@ -206,10 +209,11 @@ int TestBed::runTestSend() {
                     if (result == -1) {
                         // no packets left, send stop
                         _pf->getCommandPacket(Packet::CMD_STOP, packetSqn, next_packet);
+                        state = S_SEND_PACKET;
                         break;
                     }
 
-                    if (success_count++ == P_TEST_UPSCALE) {
+                    if (success_count++ == P_TEST_UPSCALE * _upscale_factor) {
                         success_count = 0;
                         if (_pf->scaleUp() == 0) {
                             _pf->previous();
@@ -217,9 +221,8 @@ int TestBed::runTestSend() {
                             _log->info("Packet size increased");
                         }
                     }
-                    error_count = 0;
 
-                    //_pm->wait(1);
+                    _pm->wait(1);
                     state = S_SEND_PACKET;
                 } else {
                     _log->error("Receiver requested packet out of order!");
@@ -230,22 +233,26 @@ int TestBed::runTestSend() {
 
             case S_SEND_PACKET:
                 _log->info("Sending packet {0}", packetSqn);
-                if (error_count > 0 && !next_packet.isCommand()) {
+                if (error_count > 2 && !next_packet.isCommand()) {
                     // Packet may be too big, try scaling down
                     error_count = 0;
                     success_count = 0;
                     if (_pf->scaleDown() == 0) {
+                        _upscale_factor *= 2;
                         _pf->previous();
                         _pf->getCommandPacket(Packet::CMD_DOWN, packetSqn, next_packet);
                         _log->info("Packet size reduced");
                     }
                 }
                 _pm->send(next_packet);
+                _packet_count++;
                 state = S_CHECK_FOR_SQN;
                 break;
 
             case S_STOP:
                 _log->info("Stopping.");
+                clock_gettime(CLOCK_REALTIME, &_end_time);
+                printStats();
                 return 0;
         }
     }
@@ -254,9 +261,9 @@ int TestBed::runTestSend() {
 
 int TestBed::runTestReceive() {
     std::vector<Packet> packets;
-    Packet packet;
+    Packet packet(_packetEDC);
     int result;
-    int scale = 2;
+    int scale = P_INIT_SCALE;
 
     StateR state = R_REQUEST;
     int i = 0;
@@ -276,9 +283,9 @@ int TestBed::runTestReceive() {
                 result = _pm->receive(packet, i, scale, 0);
 
                 // transition
-                if (result == 0) {
+                if (result == STATUS_OK) {
                     i++;
-                    //_pm->wait(1);
+                    _pm->wait(1);
                     if (packet.isCommand()) {
                         switch (packet.getCommand()) {
                             case Packet::CMD_UP:
@@ -301,10 +308,10 @@ int TestBed::runTestReceive() {
                         packets.push_back(packet);
                         state = R_REQUEST;
                     }
-                } else if (result == -1) {
+                } else if (result == TIMEOUT_WHILE_RECEIVING) {
                     state = R_RERECEIVE;
                     //manager->wait(1);
-                } else if (result == -2) {
+                } else if (result == TIMEOUT_WHILE_WAITING) {
                     state = R_REQUEST;
                     //manager->wait(1);
                 } else
@@ -316,7 +323,7 @@ int TestBed::runTestReceive() {
                 result = _pm->receive(packet, i, scale, 1);
 
                 // transition
-                if (result == 0) {
+                if (result == STATUS_OK) {
                     i++;
                     if (packet.isCommand()) {
                         switch (packet.getCommand()) {
@@ -340,10 +347,10 @@ int TestBed::runTestReceive() {
                         packets.push_back(packet);
                         state = R_REQUEST;
                     }
-                } else if (result == -1) {
+                } else if (result == TIMEOUT_WHILE_RECEIVING) {
                     state = R_RERECEIVE;
                     //manager->wait(1);
-                } else if (result == -2) {
+                } else if (result == TIMEOUT_WHILE_WAITING) {
                     state = R_REQUEST;
                     //manager->wait(1);
                 } else
@@ -371,5 +378,13 @@ int TestBed::runTestReceive() {
 void TestBed::setTestBuffer(unsigned char *data, int length) {
     _buf = data;
     _buf_len = length;
+}
+
+void TestBed::printStats() {
+    _log->info("======= Statistics =======");
+    _log->info("= #Packets: {0:2}", _packet_count);
+    _log->info("= #Retransmissions: {0}", _retrans_count);
+    _log->info("= Time: {0}:{1}", (_end_time.tv_sec - _start_time.tv_sec)/60, (_end_time.tv_sec - _start_time.tv_sec)%60);
+    _log->info("==========================");
 }
 

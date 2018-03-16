@@ -15,9 +15,9 @@ namespace spd=spdlog;
 
 class PacketFactory {
 public:
-    PacketFactory();
+    PacketFactory(std::shared_ptr<EDC> edc);
 
-    explicit PacketFactory(unsigned char *data_in, size_t length);
+    explicit PacketFactory(unsigned char *data_in, size_t length, std::shared_ptr<EDC> edc);
 
     void resetIterator();
 
@@ -28,21 +28,26 @@ public:
     int getCommandPacket(int cmd, int sqn, Packet &ret);
 
     int previous(); // bad name
-    int scaleUp();
 
-    int scaleDown();
+    static int scaleUp();
+
+    static int scaleDown();
+
+    static int getScale();
 
     bool isEmpty() { return _data.size(); }
 
 private:
     std::shared_ptr<spd::logger> _log;
 
+    std::shared_ptr<EDC> _edc;
+
     std::vector<bit_t> _data;
     std::vector<bit_t>::iterator _last_packet_start;
     std::vector<bit_t>::iterator _next_packet_start;
 
     // dynamic stuff
-    int _scale = P_INIT_SCALE;
+    static int _scale;
 };
 
 

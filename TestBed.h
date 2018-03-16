@@ -14,7 +14,7 @@
 
 class TestBed {
 public:
-    static const int ECC_NOECC = 0;
+    static int TYPE;
     static const int ECC_HADAMARD = 1;
 
     static const int EDC_NOEDC = 0;
@@ -29,16 +29,42 @@ public:
 
     TestBed();
 
+    /**
+     * Select the ecc type for requests
+     * @param type: see ECC_* constants
+     **/
     void setRequestECC(int type);
 
+    /**
+     * Select the edc type for data packets (command packets always use Berger codes)
+     * @param type: see EDC_* constants
+     **/
     void setPacketEDC(int type);
 
+    /**
+     * Select the hardware abstraction layer type
+     * @param halType: see HAL_* constants
+     **/
     void setHAL(int halType);
 
+    /**
+     * Select the type of sensor/attack
+     * @param sensorType: see SENSOR_* constants
+     **/
     void setSensor(int sensorType);
 
+    /**
+     * Set the input/output data buffer
+     * @param data: pointer to the buffer
+     * @param length: buffer size in bytes
+     **/
     void setTestBuffer(unsigned char *data, int length);
 
+    /**
+     * Start the testing procedure.
+     * @param send: Set to true for sender-mode or false for receiver-mode
+     * @return: ???
+     **/
     int runTest(bool send);
 
 private:
@@ -71,10 +97,16 @@ private:
     std::shared_ptr<spd::logger> _log;
     unsigned char *_buf;
     int _buf_len;
+    int _packet_count = 0;
+    int _retrans_count = 0;
+    struct timespec _start_time{};
+    struct timespec _end_time{};
+    int _upscale_factor = 1; // FIXME: naming
 
     int runTestSend();
-
     int runTestReceive();
+
+    void printStats();
 };
 
 

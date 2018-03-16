@@ -49,7 +49,7 @@ public:
      * @param sqn: sequence number
      * @return: number of bits in sqn_had on success, -1 on error
      **/
-    int checkRequest(byte_t *sqn_had);
+    int validateRequest(byte_t *sqn_had);
 
     /**
      * Send a packet over the covert channel
@@ -67,6 +67,18 @@ public:
      **/
     int receive(Packet &packet, int sqn, int scale, int long_timeout);
 
+    /**
+     * Wait a specified number of cycles
+     * @param cycle_count: Number of cycles
+     **/
+    void wait(int cycle_count);
+
+    /**
+     * Unpacks a packet-stream (must be a valid packet)
+     * @param packets: collection of packets
+     * @param output: buffer for the unpacked data
+     * @return: output length in bytes
+     **/
     int unpack(std::vector<Packet> packets, byte_t *output, int output_len);
 
     /**
@@ -85,21 +97,21 @@ public:
      **/
     int unpack(std::vector<Packet> packets, std::vector<bit_t> &output);
 
-    /**
-     * Wait a specified number of cycles
-     * @param cycle_count: Number of cycles
-     **/
-    void wait(int cycle_count);
-
 private:
     std::shared_ptr<ECC> _ecc;
     std::shared_ptr<EDC> _edc;
     std::shared_ptr<Sensor> _sens;
     std::shared_ptr<spd::logger> _log;
 
-    int _scale = P_INIT_SCALE;
-
     int check(Packet packet, int sqn);
     int waitForRequestBits(byte_t *sqn_had);
     int waitForRequestByte(byte_t *sqn_had);
+    int checkForRequestBits(byte_t *sqn_had, bool long_timeout);
+    int checkForRequestByte(byte_t *sqn_had, bool long_timeout);
+    int requestBits(int sqn);
+    int requestBytes(int sqn);
+    int sendBits(Packet packet);
+    int sendBytes(Packet packet);
+    int receiveBits(Packet &packet, int sqn, int scale, int long_timeout);
+    int receiveBytes(Packet &packet, int sqn, int scale, int long_timeout);
 };

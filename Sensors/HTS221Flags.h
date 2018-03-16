@@ -45,6 +45,8 @@ public:
 
     int supportsBytes() override;
 
+    void wait(int cycle_count) override;
+
     // not used
     //int send(byte *data, int length);
 
@@ -60,6 +62,7 @@ private:
     int tryReadBit();
 
     const unsigned int CYCLE_DELAY = (CYCLE_MS % 1000) * 1000000;
+    const unsigned int WRITE_DELAY = CYCLE_DELAY / 2; // allow "normal" applications to read the status flag?
 };
 
 

@@ -39,6 +39,7 @@
 #define I2C_LPS25H_RPDS_L               0x39
 #define I2C_LPS25H_RPDS_H               0x3A
 
+
 class LPS25HUnused : public Sensor {
 public:
     LPS25HUnused(std::shared_ptr<HAL> hal);
@@ -61,6 +62,8 @@ public:
 
     int supportsBytes() override;
 
+    void wait(int cycle_count) override;
+
     // not used
     //int send(byte *data, int length);
 
@@ -70,7 +73,7 @@ public:
 
 private:
     unsigned char _last_byte = 0;
-    bool _last_byte_valid = false;
+    bool _transmission = false;
 };
 
 

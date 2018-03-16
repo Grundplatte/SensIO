@@ -27,7 +27,8 @@ public:
     virtual int waitForSensReady() = 0;
 
     /**
-     * Send one bit over the covert channel
+     * Send one bit/byte over the covert channel
+     * @details The implementation should handle all timings.
      * @param bit: Bit to send
      * @return: -1 on error, 0 otherwise
      **/
@@ -36,7 +37,7 @@ public:
     virtual int sendByte(unsigned char byte) = 0;
 
     /**
-     * Read a bit from the covert channel
+     * Read a bit/byte from the covert channel
      * @param timeout: use timeout (only used during a transmission, not for the first bit)
      * @param long_timeout: 0...disabled, otherwise X * normal timeout (usually 2 or 3)
      * @return: -1 on error, 0 or 1 otherwise (depending on transmitted bit)
@@ -52,6 +53,8 @@ public:
     virtual int sendReset() = 0;
 
     virtual int supportsBytes() = 0;
+
+    virtual void wait(int cycle_count) = 0;
 
 protected:
     std::shared_ptr<spd::logger> _log;
