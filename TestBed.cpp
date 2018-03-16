@@ -10,6 +10,7 @@
 #include "Sensors/HAL/I2C_HAL.h"
 #include "Sensors/HTS221Flags.h"
 #include "Sensors/LPS25HUnused.h"
+#include "Sensors/LPS25HSettings.h"
 
 namespace spd = spdlog;
 
@@ -72,7 +73,11 @@ void TestBed::setSensor(int sensorType) {
             break;
         case SENSOR_LPS25H_UNUSED:
             _sensor = std::shared_ptr<Sensor>(new LPS25HUnused(_hal));
-            _log->trace("Sensor set to: LPS25Unused");
+            _log->trace("Sensor set to: LPS25HUnused");
+            break;
+        case SENSOR_LPS25H_TOGGLE:
+            _sensor = std::shared_ptr<Sensor>(new LPS25HSettings(_hal));
+            _log->trace("Sensor set to: LPS25HSettings");
             break;
         default:
             _log->error("Unknown sensor/attack type!");

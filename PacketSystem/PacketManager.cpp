@@ -3,7 +3,6 @@
 #include <sstream>
 #include <iostream>
 #include "PacketManager.h"
-#include "PacketHelper.h"
 #include "EDC/Berger.h"
 #include "../TestBed.h"
 
