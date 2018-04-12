@@ -11,6 +11,8 @@
 #include "Sensors/HTS221Flags.h"
 #include "Sensors/LPS25HUnused.h"
 #include "Sensors/LPS25HSettings.h"
+#include "Sensors/LPS25H.h"
+#include "Attack/UnusedRegisters.h"
 
 namespace spd = spdlog;
 
@@ -20,11 +22,11 @@ void TestBed::setRequestECC(int type) {
     switch (type) {
         case ECC_HADAMARD:
             _requestECC = std::shared_ptr<ECC>(new Hadamard());
-            _log->trace("Request ecc set to: Hadamard");
+            _log->debug("Request ecc set to: Hadamard");
             break;
         default:
             _requestECC = std::shared_ptr<ECC>(new Hadamard());
-            _log->trace("Request ecc set to: default (Hadamard)");
+            _log->debug("Request ecc set to: default (Hadamard)");
     }
 }
 
@@ -32,15 +34,15 @@ void TestBed::setPacketEDC(int type) {
     switch (type) {
         case EDC_NOEDC:
             _packetEDC = std::shared_ptr<EDC>(new NoEDC());
-            _log->trace("Packet edc set to: NoEDC");
+            _log->debug("Packet edc set to: NoEDC");
             break;
         case EDC_BERGER:
             _packetEDC = std::shared_ptr<EDC>(new Berger());
-            _log->trace("Packet edc set to: Berger");
+            _log->debug("Packet edc set to: Berger");
             break;
         default:
             _packetEDC = std::shared_ptr<EDC>(new Berger());
-            _log->trace("Packet edc set to: default (Berger)");
+            _log->debug("Packet edc set to: default (Berger)");
     }
 }
 
@@ -48,11 +50,11 @@ void TestBed::setHAL(int halType) {
     switch (halType) {
         case HAL_I2C:
             _hal = std::shared_ptr<HAL>(new I2C_HAL());
-            _log->trace("HAL set to: I2C");
+            _log->debug("HAL set to: I2C");
             break;
         case HAL_SPI:
             _hal = std::shared_ptr<HAL>(new SPI_HAL());
-            _log->trace("HAL set to: SPI");
+            _log->debug("HAL set to: SPI");
             break;
         default:
             _log->error("Unknown HAL type!");
@@ -66,21 +68,41 @@ void TestBed::setSensor(int sensorType) {
     }
 
     switch (sensorType) {
-        case SENSOR_HTS221_FLAGS:
+        case SENSOR_LPS25H:
             // FIXME: why cast?
-            _sensor = std::shared_ptr<Sensor>(new HTS221Flags(_hal));
-            _log->trace("Sensor set to: HTS221Flags");
+            _sensor = std::shared_ptr<SensorBase>(new LPS25H(_hal));
+            _log->debug("Sensor set to: LPS25H");
             break;
-        case SENSOR_LPS25H_UNUSED:
-            _sensor = std::shared_ptr<Sensor>(new LPS25HUnused(_hal));
-            _log->trace("Sensor set to: LPS25HUnused");
-            break;
-        case SENSOR_LPS25H_TOGGLE:
-            _sensor = std::shared_ptr<Sensor>(new LPS25HSettings(_hal));
-            _log->trace("Sensor set to: LPS25HSettings");
+        case SENSOR_HTS221:
+            //_sensor = std::shared_ptr<SensorBase>(new LPS25HUnused(_hal));
+            _log->debug("Sensor set to: HTS221");
             break;
         default:
-            _log->error("Unknown sensor/attack type!");
+            _log->error("Unknown sensor.");
+    }
+}
+
+void TestBed::setAttack(int attackType) {
+    if(!_sensor) {
+        _log->error("Please set sensor before attack!");
+        return;
+    }
+
+    switch (attackType) {
+        case ATTACK_READFLAGS:
+            //_attack = std::shared_ptr<AttackBase>(new UnusedRegisters(_packetEDC, _sensor));
+            _log->debug("Attack set to: Read Flags");
+            break;
+        case ATTACK_TOGGLESET:
+            //_attack = std::shared_ptr<AttackBase>();
+            _log->debug("Attack set to: Toggle Settings");
+            break;
+        case ATTACK_UNUSEDREG:
+            _attack = std::shared_ptr<AttackBase>(new UnusedRegisters(_packetEDC, _sensor));
+            _log->debug("Attack set to: Unused Registers");
+            break;
+        default:
+            _log->error("Unknown attack.");
     }
 }
 
@@ -112,7 +134,7 @@ int TestBed::runTest(bool send) {
         _log->error("Send mode, but no data!");
         return -1;
     }
-    _pm = std::unique_ptr<PacketManager>(new PacketManager(_requestECC, _packetEDC, _sensor));
+    _pm = std::unique_ptr<PacketManager>(new PacketManager(_requestECC, _packetEDC, _attack));
     _pf = std::unique_ptr<PacketFactory>(new PacketFactory(_packetEDC));
 
 
@@ -170,6 +192,7 @@ int TestBed::runTestSend() {
 
                 if (result == TIMEOUT_WHILE_WAITING) {
                     error_count++;
+                    success_count = 0;
                     _retrans_count++;
                     state = S_SEND_PACKET;
                     //manager.wait(1); // TODO: ??
@@ -218,7 +241,8 @@ int TestBed::runTestSend() {
                         break;
                     }
 
-                    if (success_count++ == P_TEST_UPSCALE * _upscale_factor) {
+                    error_count = 0;
+                    if (success_count++ == 2) {
                         success_count = 0;
                         if (_pf->scaleUp() == 0) {
                             _pf->previous();
@@ -238,7 +262,7 @@ int TestBed::runTestSend() {
 
             case S_SEND_PACKET:
                 _log->info("Sending packet {0}", packetSqn);
-                if (error_count > 2 && !next_packet.isCommand()) {
+                if (error_count > 1 && !next_packet.isCommand()) {
                     // Packet may be too big, try scaling down
                     error_count = 0;
                     success_count = 0;

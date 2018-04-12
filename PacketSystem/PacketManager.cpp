@@ -8,10 +8,8 @@
 
 namespace spd = spdlog;
 
-PacketManager::PacketManager(std::shared_ptr<ECC> ecc, std::shared_ptr<EDC> edc, std::shared_ptr<Sensor> sensor) : _ecc(
-        ecc), _edc(edc), _sens(sensor) {
-    if (!_sens->isActive())
-        _sens->toggleOnOff(1);
+PacketManager::PacketManager(std::shared_ptr<ECC> ecc, std::shared_ptr<EDC> edc, std::shared_ptr<AttackBase> attack) : _ecc(
+        ecc), _edc(edc), _attack(attack){
 
     // <-- Log settings -->
     std::shared_ptr<spdlog::logger> log = spd::get("PMgr");
@@ -22,34 +20,11 @@ PacketManager::PacketManager(std::shared_ptr<ECC> ecc, std::shared_ptr<EDC> edc,
  * PUBLIC FUNCTIONS
 ***************************/
 
-int PacketManager::waitForRequest(byte_t *sqn_had) {
-    return _sens->supportsBytes() ? waitForRequestByte(sqn_had) : waitForRequestBits(sqn_had);
-}
-
-int PacketManager::checkForRequest(byte_t *sqn_had, bool long_timeout) {
-    return _sens->supportsBytes() ? checkForRequestByte(sqn_had, long_timeout) : checkForRequestBits(sqn_had, long_timeout);
-}
-
-int PacketManager::request(int sqn) {
-    return _sens->supportsBytes() ? requestBytes(sqn) : requestBits(sqn);
-}
 
 int PacketManager::validateRequest(byte_t *sqn_had) {
     size_t had_length = (size_t) _ecc->getEncodedSize(P_SQN_BITS);
-    // error correction
-    // return ecc.decode(sqnHad, hda_length, sqn)
 
-    // error detection
     return _ecc->check(sqn_had, had_length);
-}
-
-// send packet
-int PacketManager::send(Packet packet) {
-    return _sens->supportsBytes() ? sendBytes(packet) : sendBits(packet);
-}
-
-int PacketManager::receive(Packet &packet, int sqn, int scale, int long_timeout) {
-    return _sens->supportsBytes() ? receiveBytes(packet, sqn, scale, long_timeout) : receiveBits(packet, sqn, scale, long_timeout);
 }
 
 int PacketManager::unpack(std::vector<Packet> packets, byte_t *output, int output_len) {
@@ -105,14 +80,13 @@ int PacketManager::unpack(std::vector<Packet> packets, std::vector<bit_t> &outpu
 }
 
 void PacketManager::wait(int cycle_count) {
-    // TODO: get cycletime from sensor
-    _sens->wait(cycle_count);
+    _attack->wait(cycle_count);
 }
 
 /**************************
  * BIT BASED PRIVATE FUNCTIONS
 ***************************/
-
+/*
 int PacketManager::waitForRequestBits(byte_t *sqn_had) {
     int bit;
     int had_bitsize = _ecc->getEncodedSize(P_SQN_BITS);
@@ -224,30 +198,25 @@ int PacketManager::receiveBits(Packet &packet, int sqn, int scale, int long_time
     // check packet, if packet is ok return 0, else return -1
     return check(packet, sqn);
 }
+*/
+
 /**************************
  * BYTE BASED PRIVATE FUNCTIONS
 ***************************/
 
-int PacketManager::waitForRequestByte(byte_t *sqn_had) {
+int PacketManager::waitForRequest(byte_t *sqn_had) {
     //TODO: support for multiple bytes?
 
-    int byte = _sens->readByte();
-
-    if(byte < 0)
-        return byte;
-
-    *sqn_had = static_cast<byte_t >(byte & 0xFF);
-
-    _log->debug("Received sqnHad: 0x{0:2x}", *sqn_had);
+    *sqn_had = (byte_t) _attack->waitForRequest();
 
     return 0;
 }
 
-int PacketManager::checkForRequestByte(byte_t *sqn_had, bool long_timeout) {
-    return waitForRequestByte(sqn_had);
+int PacketManager::checkForRequest(byte_t *sqn_had, bool long_timeout) {
+    return waitForRequest(sqn_had);
 }
 
-int PacketManager::requestBytes(int sqn) {
+int PacketManager::request(int sqn) {
     int mod_sqn = MAX_SQN + 1;
 
     byte_t sqn_had;
@@ -262,93 +231,26 @@ int PacketManager::requestBytes(int sqn) {
     }
 
     //_sens->readByte();
-    _sens->sendByte(sqn_had);
+    _attack->request(sqn_had);
 
     //TODO: error handling
 
     return 0;
 }
 
-int PacketManager::sendBytes(Packet packet) {
-    //TODO: implement
+int PacketManager::send(Packet packet) {
     _log->debug("Sending {}bit packet.", packet.size());
 
-    int bitsize = packet.size();
-    int bytesize = (bitsize-1)/7 + 1;
-    std::vector<bit_t> tmp;
-    packet.toBits(tmp);
-    std::vector<byte_t> tmp2;
-    byte_t  tmp3 = 0x00;
-
-    int bytes = 1 + (tmp.size() - 1) / 7;
-
-    for (int i = 0; i < bytes * 7; i++) {
-
-        if (i < tmp.size() && tmp[i]) {
-            tmp3 |= (1 << (i % 7));
-        }
-
-        if((i+1)%7==0){
-            tmp2.push_back(tmp3);
-            tmp3 = 0x00;
-        }
-    }
-
-    for (int i = 0; i < bytesize; i++) {
-        _sens->sendByte(tmp2[i]);
-        _sens->readByte(); // wait for ack
-    }
+    _attack->send(packet);
 
     // debug log
     packet.printContents();
     return 0;
 }
 
-int PacketManager::receiveBytes(Packet &packet, int sqn, int scale, int long_timeout) {
-    //TODO: implement
-    int byte;
+int PacketManager::receive(Packet &packet, int sqn, int scale, int long_timeout) {
 
-    // packet size for normal packets
-    int packet_bitsize =
-            1 + P_DATA_BITS[scale] + P_SQN_BITS + _edc->calcOutputSize(P_DATA_BITS[scale] + P_SQN_BITS + 1);
-
-    int packet_bytesize = (packet_bitsize-1) / 7 + 1;
-    _log->debug("Expecting {}byte packet.", packet_bytesize);
-
-    std::vector<byte_t> tmp;
-    std::vector<bit_t> tmp2;
-    for (int i = 0; i < packet_bytesize; i++) {
-        byte = _sens->readByte();
-        if(byte < 0)
-            return byte; // error
-
-        //write ack
-        int temp = ~byte;
-        _sens->sendByte((unsigned char)(temp & 0x7F));
-
-        tmp.push_back((unsigned char)byte);
-
-        if(i == 0 && byte & 0x01){
-            packet_bytesize = 2;
-        }
-    }
-
-    for (int i = 0; i < tmp.size(); i++) {
-        for (int l = 0; l < 7; l++) {
-            tmp2.push_back((unsigned char)((tmp[i] & (1 << l)) >> l));
-        }
-    }
-
-    for(int i=0; i<tmp.size(); i++){
-        _log->trace("byte: {0:x}", tmp[i]);
-    }
-
-    for(int i=0; i<tmp2.size(); i++){
-        _log->trace("bit: {0:x}", tmp2[i]);
-    }
-
-
-    packet.fromBits(tmp2, scale);
+    _attack->receive(packet, scale);
 
     // debug log
     packet.printContents();

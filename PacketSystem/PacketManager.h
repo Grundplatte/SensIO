@@ -16,12 +16,14 @@
 #include "Packet.h"
 #include "PacketFactory.h"
 #include "../Sensors/Sensor.h"
+#include "../Attack/AttackBase.h"
+#include "../Sensors/SensorBase.h"
 
 namespace spd = spdlog;
 
 class PacketManager {
 public:
-    PacketManager(std::shared_ptr<ECC> ecc, std::shared_ptr<EDC> edc, std::shared_ptr<Sensor> sensor);
+    PacketManager(std::shared_ptr<ECC> ecc, std::shared_ptr<EDC> edc, std::shared_ptr<AttackBase> attack);
 
     /**
      * Wait until someone requests a packet (no initial timeout)
@@ -100,18 +102,8 @@ public:
 private:
     std::shared_ptr<ECC> _ecc;
     std::shared_ptr<EDC> _edc;
-    std::shared_ptr<Sensor> _sens;
+    std::shared_ptr<AttackBase> _attack;
     std::shared_ptr<spd::logger> _log;
 
     int check(Packet packet, int sqn);
-    int waitForRequestBits(byte_t *sqn_had);
-    int waitForRequestByte(byte_t *sqn_had);
-    int checkForRequestBits(byte_t *sqn_had, bool long_timeout);
-    int checkForRequestByte(byte_t *sqn_had, bool long_timeout);
-    int requestBits(int sqn);
-    int requestBytes(int sqn);
-    int sendBits(Packet packet);
-    int sendBytes(Packet packet);
-    int receiveBits(Packet &packet, int sqn, int scale, int long_timeout);
-    int receiveBytes(Packet &packet, int sqn, int scale, int long_timeout);
 };

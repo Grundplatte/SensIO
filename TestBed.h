@@ -27,6 +27,13 @@ public:
     static const int SENSOR_LPS25H_UNUSED = 1;
     static const int SENSOR_LPS25H_TOGGLE = 2;
 
+    static const int SENSOR_LPS25H = 0;
+    static const int SENSOR_HTS221 = 1;
+
+    static const int ATTACK_UNUSEDREG = 0;
+    static const int ATTACK_TOGGLESET = 1;
+    static const int ATTACK_READFLAGS = 2;
+
     TestBed();
 
     /**
@@ -53,6 +60,8 @@ public:
      **/
     void setSensor(int sensorType);
 
+    void setAttack(int attackType);
+
     /**
      * Set the input/output data buffer
      * @param data: pointer to the buffer
@@ -71,7 +80,8 @@ private:
     std::shared_ptr<ECC> _requestECC;// TODO: restructure edc/ecc?
     std::shared_ptr<EDC> _packetEDC;
     std::shared_ptr<HAL> _hal;
-    std::shared_ptr<Sensor> _sensor;
+    std::shared_ptr<SensorBase> _sensor;
+    std::shared_ptr<AttackBase> _attack;
 
     enum StateR {
         R_IDLE,

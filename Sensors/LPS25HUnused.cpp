@@ -120,6 +120,7 @@ int LPS25HUnused::sendByte(unsigned char inbyte) {
         //TODO: add timeout
     }*/
 
+    // sender
     if(TestBed::TYPE){
         inbyte |= 0x80;
     }

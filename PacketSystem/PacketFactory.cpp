@@ -95,20 +95,22 @@ void PacketFactory::resetIterator() {
 }
 
 int PacketFactory::scaleUp() {
-    /*
-    if (_scale < 4) {
+#ifdef DYNAMIC
+    if (_scale < 2) {
         _scale++;
         return 0;
-    }*/
+    }
+#endif
     return -1;
 }
 
 int PacketFactory::scaleDown() {
-    /*
+#ifdef DYNAMIC
     if (_scale > 0) {
         _scale--;
         return 0;
-    }*/
+    }
+#endif
     return -1;
 }
 

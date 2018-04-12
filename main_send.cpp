@@ -54,10 +54,11 @@ int main(int argc, char *argv[]) {
         exit(EXIT_FAILURE);
 
     TestBed testBed = TestBed();
-    testBed.setHAL(TestBed::HAL_I2C);
-    testBed.setSensor(TestBed::SENSOR_LPS25H_UNUSED);
     testBed.setRequestECC(TestBed::ECC_HADAMARD);
-    testBed.setPacketEDC(TestBed::EDC_NOEDC);
+    testBed.setPacketEDC(TestBed::EDC_BERGER);
+    testBed.setHAL(TestBed::HAL_I2C);
+    testBed.setSensor(TestBed::SENSOR_LPS25H);
+    testBed.setAttack(TestBed::ATTACK_UNUSEDREG);
     testBed.setTestBuffer(filecontent, filesize);
 
     testBed.runTest(true);
