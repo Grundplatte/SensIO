@@ -25,12 +25,7 @@ public:
     int wait(int cycles) override;
 
 private:
-    std::shared_ptr<EDC> _edc;
-    std::shared_ptr<SensorBase> _sens;
-    std::shared_ptr<spd::logger> _log;
-
     unsigned char _last_byte = 0;
-    unsigned char _flag = 0x0;
     bool _transmission = false;
 
     int _unused_reg_addr;

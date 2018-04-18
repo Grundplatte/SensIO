@@ -8,6 +8,15 @@
 #define LPS25H_I2C_ADDR0                0x5C
 #define LPS25H_I2C_ADDR1                0x5D
 
+//#define LPS25H_USE_ALT // use alternative address
+
+#ifdef  LPS25H_USE_ALT
+#define LPS25H_I2C_ADDR LPS25H_I2C_ADDR1
+#else
+#define LPS25H_I2C_ADDR LPS25H_I2C_ADDR0
+#endif
+
+
 #define LPS25H_REG_ID               0x0F
 #define LPS25H_ID                   0xBD
 
@@ -47,6 +56,7 @@ public:
     std::vector<int> getUnusedRegisters() override;
     std::vector<bool> getResultFlags() override;
     std::vector<int> getResultRegisters() override;
+    std::vector<int> getSettingRegisters() override;
     int getSensorCount() override;
     int getCycleTime() override;
     int readRegister(int registerAddress, int size, byte_t &data) override;

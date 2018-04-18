@@ -6,15 +6,14 @@
 #include "../Sensors/SensorBase.h"
 #include "../TestBed.h"
 
-UnusedRegisters::UnusedRegisters(std::shared_ptr<EDC> edc, std::shared_ptr<SensorBase> sensor) : _sens(sensor), _edc(edc){
+UnusedRegisters::UnusedRegisters(std::shared_ptr<EDC> edc, std::shared_ptr<SensorBase> sensor) {
     std::shared_ptr<spdlog::logger> log = spd::get("Unused Registers");
     _log = log ? log : spd::stdout_color_mt("Unused Registers");
 
-    // setup
-    if(!_sens->isEnabled()){
-        _sens->enable();
-    }
+    _sens = sensor;
+    _edc = edc;
 
+    // setup
     auto reg = _sens->getUnusedRegisters();
     if(reg.size() == 0){
         _log->error("Sensor has no unused registers.");
@@ -27,7 +26,7 @@ UnusedRegisters::UnusedRegisters(std::shared_ptr<EDC> edc, std::shared_ptr<Senso
     }
 
     // sender flag
-    if(TestBed::TYPE) _flag = 0x80;
+    //if(TestBed::TYPE) _flag = 0x80;
 
     _sens->readRegister(_unused_reg_addr, 1, _last_byte);
     if(_last_byte != 0xFF){

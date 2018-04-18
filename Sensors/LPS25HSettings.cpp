@@ -62,7 +62,6 @@ int LPS25HSettings::toggleOnOff(bit_t on_off) {
 
 int LPS25HSettings::readBit(bool timeout, int long_timeout)
 {
-    // TODO: implement
     unsigned char data[1];
     unsigned char ack[1];
     bool new_bit;
@@ -99,7 +98,6 @@ int LPS25HSettings::readByte() {
 // read temp = 0; read hum = 1;
 int LPS25HSettings::sendBit(bit_t bit)
 {
-    // TODO: implement
     unsigned char data[1];
     data[0] = _ref_value;
 

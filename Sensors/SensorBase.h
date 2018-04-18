@@ -32,6 +32,8 @@ public:
      **/
     virtual std::vector<int> getUnusedRegisters() = 0;
 
+    virtual std::vector<int> getSettingRegisters() = 0;
+
     /**
      * Returns a list of result flags
      * @return list of result flags
