@@ -13,6 +13,7 @@
 #include "Sensors/LPS25HSettings.h"
 #include "Sensors/LPS25H.h"
 #include "Attack/UnusedRegisters.h"
+#include "Attack/ToggleSettings.h"
 
 namespace spd = spdlog;
 
@@ -69,7 +70,6 @@ void TestBed::setSensor(int sensorType) {
 
     switch (sensorType) {
         case SENSOR_LPS25H:
-            // FIXME: why cast?
             _sensor = std::shared_ptr<SensorBase>(new LPS25H(_hal));
             _log->debug("Sensor set to: LPS25H");
             break;
@@ -94,7 +94,7 @@ void TestBed::setAttack(int attackType) {
             _log->debug("Attack set to: Read Flags");
             break;
         case ATTACK_TOGGLESET:
-            //_attack = std::shared_ptr<AttackBase>();
+            _attack = std::shared_ptr<AttackBase>(new ToggleSettings(_packetEDC, _sensor));
             _log->debug("Attack set to: Toggle Settings");
             break;
         case ATTACK_UNUSEDREG:
@@ -195,7 +195,7 @@ int TestBed::runTestSend() {
                     success_count = 0;
                     _retrans_count++;
                     state = S_SEND_PACKET;
-                    //manager.wait(1); // TODO: ??
+                    //manager.wait(1);
                 } else if (result == TIMEOUT_WHILE_RECEIVING) {
                     _packet_count++;
                     _retrans_count++;

@@ -77,7 +77,7 @@ public:
     int runTest(bool send);
 
 private:
-    std::shared_ptr<ECC> _requestECC;// TODO: restructure edc/ecc?
+    std::shared_ptr<ECC> _requestECC;
     std::shared_ptr<EDC> _packetEDC;
     std::shared_ptr<HAL> _hal;
     std::shared_ptr<SensorBase> _sensor;
