@@ -14,7 +14,7 @@ set(SOURCE_FILES_LIB PacketSystem/ECC/Viterbi.cpp Sensors/HTS221Flags.cpp Sensor
         Sensors/HAL/I2C_HAL.cpp PacketSystem/PacketManager.cpp PacketSystem/ECC/Hadamard.cpp PacketSystem/EDC/Berger.cpp
         PacketSystem/EDC/NoEDC.cpp PacketSystem/Packet.cpp PacketSystem/Packet.h PacketSystem/PacketFactory.cpp
         PacketSystem/PacketFactory.h Sensors/HAL/SPI_HAL.cpp Sensors/HAL/SPI_HAL.h TestBed.cpp TestBed.h
-        ChannelTypes/ReadFlags.cpp ChannelTypes/ReadFlags.h Sensors/LPS25H.cpp Sensors/LPS25H.h Sensors/SensorBase.h Attack/UnusedRegisters.cpp Attack/UnusedRegisters.h Attack/ToggleSettings.cpp Attack/ToggleSettings.h Attack/ReadFlags.cpp Attack/ReadFlags.h Sensors/HTS221.cpp Sensors/HTS221.h)
+        ChannelTypes/ReadFlags.cpp ChannelTypes/ReadFlags.h Sensors/LPS25H.cpp Sensors/LPS25H.h Sensors/SensorBase.h Attack/UnusedRegisters.cpp Attack/UnusedRegisters.h Attack/ToggleSettings.cpp Attack/ToggleSettings.h Attack/ReadFlags.cpp Attack/ReadFlags.h Sensors/HTS221.cpp Sensors/HTS221.h Attack/AttackHelper.cpp Attack/AttackHelper.h)
 set(HEADER_FILES_LIB PacketSystem/ECC/ECC.h PacketSystem/EDC/EDC.h Sensors/Sensor.h Sensors/HAL/HAL.h Attack/AttackBase.h)
 
 set(SOURCE_FILES_SENDER ${SOURCE_FILES_LIB} main_send.cpp)

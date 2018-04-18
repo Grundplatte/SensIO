@@ -1,6 +1,12 @@
-//
-// Created by Markus Feldbacher on 31.01.18.
-//
+/**
+    SensIO
+    TestBed.cpp
+
+    Implementation of the testbed, that handles the selection of different aspects of the attack
+    (e.g. channel/attack type, hal, sensor, ...).
+
+    @author Markus Feldbacher
+*/
 
 #include "TestBed.h"
 #include "PacketSystem/EDC/NoEDC.h"

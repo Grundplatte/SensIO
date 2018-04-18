@@ -1,6 +1,12 @@
-//
-// Created by Markus Feldbacher on 12.04.18.
-//
+/**
+    SensIO
+    HTS221.cpp
+
+    Implementation of the sensor layer for the HTS221 sensor.
+
+    @todo Address translation; wip
+    @author Markus Feldbacher
+*/
 
 #include "HTS221.h"
 

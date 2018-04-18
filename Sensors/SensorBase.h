@@ -1,4 +1,14 @@
-#pragma once
+/**
+    SensIO
+    SensorBase.h
+
+    Definition of functions that must be provided by the sensor layer.
+
+    @author Markus Feldbacher
+*/
+
+#ifndef SIDECHANNEL_SENSORBASE_H
+#define SIDECHANNEL_SENSORBASE_H
 
 #include "../spdlog/spdlog.h"
 #include "../Defines.h"
@@ -74,3 +84,5 @@ protected:
     std::shared_ptr<spd::logger> _log;
     std::shared_ptr<HAL> _hal;
 };
+
+#endif // SIDECHANNEL_SENSORBASE_H

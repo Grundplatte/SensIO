@@ -1,6 +1,12 @@
-//
-// Created by Markus Feldbacher on 31.01.18.
-//
+/**
+    SensIO
+    TestBed.h
+
+    Implementation of the testbed, that handles the selection of different aspects of the attack
+    (e.g. channel/attack type, hal, sensor, ...).
+
+    @author Markus Feldbacher
+*/
 
 #ifndef SIDECHANNEL_TESTBED_H
 #define SIDECHANNEL_TESTBED_H

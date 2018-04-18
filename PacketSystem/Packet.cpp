@@ -1,6 +1,11 @@
-//
-// Created by Markus Feldbacher on 20.12.17.
-//
+/**
+    SensIO
+    Packet.cpp
+
+    Definition and implementation of the packet structure.
+
+    @author Markus Feldbacher
+*/
 
 #include <sstream>
 #include "Packet.h"

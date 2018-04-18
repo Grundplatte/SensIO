@@ -1,4 +1,14 @@
-#pragma once
+/**
+    SensIO
+    Defines.h
+
+    Global used definitions.
+
+    @author Markus Feldbacher
+*/
+
+#ifndef SIDECHANNEL_DEFINES_H
+#define SIDECHANNEL_DEFINES_H
 
 #include <cmath>
 
@@ -27,3 +37,5 @@ const unsigned int P_TEST_UPSCALE = 2;
 const unsigned int P_INIT_SCALE = 0;
 
 const int MAX_SQN = (int) pow(2, P_SQN_BITS) - 1;
+
+#endif // SIDECHANNEL_DEFINES_H

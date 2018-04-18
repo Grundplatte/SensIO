@@ -1,6 +1,11 @@
-//
-// Created by Markus Feldbacher on 20.12.17.
-//
+/**
+    SensIO
+    Packet.h
+
+    Definition and implementation of the packet structure.
+
+    @author Markus Feldbacher
+*/
 
 #ifndef SIDECHANNEL_PACKET_H
 #define SIDECHANNEL_PACKET_H

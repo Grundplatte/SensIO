@@ -1,6 +1,11 @@
-//
-// Created by pi on 11/21/17.
-//
+/**
+    SensIO
+    Berger.cpp
+
+    Simple implementation of the Berger code.
+
+    @author Markus Feldbacher
+*/
 
 #include <cmath>
 #include <cstdio>

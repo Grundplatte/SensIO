@@ -1,6 +1,14 @@
-//
-// Created by Markus Feldbacher on 30.01.18.
-//
+/**
+    SensIO
+    SPI_HAL.cpp
+
+    Implementation of SPI HAL. This was programmed for a raspberry pi, which has multiple SPI busses. The bus can be
+    changed by altering the SPI_INTERFACE definition.
+
+
+    @todo Address translation; wip
+    @author Markus Feldbacher
+*/
 
 #include <fcntl.h>
 #include <cstdlib>
@@ -27,7 +35,7 @@ int SPI_HAL::write(byte_t slave_addr, byte_t reg_addr, unsigned int length, byte
 }
 
 SPI_HAL::SPI_HAL() {
-    if ((_spi = open(SPI_INTERFACE_0, O_RDWR)) < 0)
+    if ((_spi = open(SPI_INTERFACE, O_RDWR)) < 0)
         exit(EXIT_FAILURE);
 
     // Set SPI parameters.

@@ -1,6 +1,11 @@
-//
-// Created by pi on 11/21/17.
-//
+/**
+    SensIO
+    Hadamard.h
+
+    Simple implementation of the Hadamard code for one, two and three bit inputs.
+
+    @author Markus Feldbacher
+*/
 
 #pragma once
 
@@ -9,8 +14,6 @@
 class Hadamard : public ECC {
 public:
     Hadamard();
-
-    ~Hadamard();
 
     int encode(byte_t *input, size_t length, byte_t *output) override;
 

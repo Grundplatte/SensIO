@@ -1,6 +1,12 @@
-//
-// Created by Markus Feldbacher on 12.04.18.
-//
+/**
+    SensIO
+    ReadFlags.cpp
+
+    Implementation of the "ReadFlags" - Attack. Uses the "result ready" flags from sensors to transmit data.
+    For more information see ***
+
+    @author Markus Feldbacher
+*/
 
 #include "ReadFlags.h"
 

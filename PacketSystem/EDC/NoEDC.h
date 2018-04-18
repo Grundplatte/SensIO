@@ -1,8 +1,14 @@
-//
-// Created by pi on 11/22/17.
-//
+/**
+    SensIO
+    NoEDC.h
 
-#pragma once
+    Dummy class used to disable the EDC feature.
+
+    @author Markus Feldbacher
+*/
+
+#ifndef SIDECHANNEL_NOEDC_H
+#define SIDECHANNEL_NOEDC_H
 
 #include "EDC.h"
 
@@ -18,3 +24,5 @@ public:
 
     int calcOutputSize(unsigned int length) override;
 };
+
+#endif // SIDECHANNEL_NOEDC_H

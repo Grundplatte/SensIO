@@ -1,6 +1,12 @@
-//
-// Created by Markus Feldbacher on 11.04.18.
-//
+/**
+    SensIO
+    UnusedRegisters.h
+
+    Implementation of the "UnusedRegister" - Attack. This attack uses an unused sensor register (e.g. threshold, ...)
+    to transmit data.
+
+    @author Markus Feldbacher
+*/
 
 #ifndef SIDECHANNEL_UNUSEDREGISTERS_H
 #define SIDECHANNEL_UNUSEDREGISTERS_H

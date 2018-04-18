@@ -1,10 +1,17 @@
-//
-// Created by Markus Feldbacher on 12.04.18.
-//
+/**
+    SensIO
+    ToggleSettings.cpp
+
+    Implementation of the "ToggleSettings" - Attack. Transmits data by slightly altering suitable sensor configurations
+    (e.g. Thresholds, Reference values, ...)
+
+    @author Markus Feldbacher
+*/
 
 #include "ToggleSettings.h"
 #include "../TestBed.h"
 #include "../PacketSystem/ECC/Hadamard.h"
+#include "AttackHelper.h"
 
 ToggleSettings::ToggleSettings(std::shared_ptr<EDC> edc, std::shared_ptr<SensorBase> sensor) {
     std::shared_ptr<spdlog::logger> log = spd::get("Toggle Settings");
@@ -13,16 +20,21 @@ ToggleSettings::ToggleSettings(std::shared_ptr<EDC> edc, std::shared_ptr<SensorB
     _sens = sensor;
     _edc = edc;
 
-    // setup
-    auto reg = _sens->getSettingRegisters();
-    if(reg.size() == 0){
-        _log->error("Sensor has no usable setting registers.");
-        exit(EXIT_FAILURE);
-        //TODO: support waiting
+    std::vector<int> reg = _sens->getSettingRegisters();
+    int retrys = 0;
+
+    while(reg.size() == 0){
+        if(++retrys > MAX_RETRYS){
+            _log->error("Sensor has no usable setting registers.");
+            exit(EXIT_FAILURE);
+        }
+
+        AttackHelper::waitS(10); // retry after 10 seconds
+
+        reg = _sens->getSettingRegisters();
     }
-    else{
-        _setting_reg_addr = reg.at(0);
-    }
+
+    _setting_reg_addr = reg.at(0);
 
     // isActive not needed
     _sens->readRegister(_setting_reg_addr, 1, _ref_value);

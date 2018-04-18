@@ -1,10 +1,17 @@
-//
-// Created by Markus Feldbacher on 11.04.18.
-//
+/**
+    SensIO
+    UnusedRegisters.cpp
+
+    Implementation of the "UnusedRegister" - Attack. This attack uses an unused sensor register (e.g. threshold, ...)
+    to transmit data.
+
+    @author Markus Feldbacher
+*/
 
 #include "UnusedRegisters.h"
 #include "../Sensors/SensorBase.h"
 #include "../TestBed.h"
+#include "AttackHelper.h"
 
 UnusedRegisters::UnusedRegisters(std::shared_ptr<EDC> edc, std::shared_ptr<SensorBase> sensor) {
     std::shared_ptr<spdlog::logger> log = spd::get("Unused Registers");
@@ -82,16 +89,13 @@ int UnusedRegisters::send(Packet packet) {
 
         ///// READ ACK
         byte_t data;
-        struct timespec req{}, rem{};
-        req.tv_sec = 1;
-        req.tv_nsec = 0; // 1s per cycle
 
         _sens->readRegister(_unused_reg_addr, 1, data);
 
         if(!_transmission){
             // init state, check every second for request
             while (memcmp(&data, &_last_byte, 1) == 0){
-                nanosleep(&req, &rem);
+                AttackHelper::waitS(1);
                 _sens->readRegister(_unused_reg_addr, 1, data);
             }
 
@@ -126,9 +130,6 @@ int UnusedRegisters::receive(Packet &packet, int scale) {
 
         // check if new data is available. if there is new data, save it and write the inverted value to the sensor
         byte_t data;
-        struct timespec req{}, rem{};
-        req.tv_sec = 1;
-        req.tv_nsec = 0; // 1s per cycle
 
         _sens->readRegister(_unused_reg_addr, 1, data);
 
@@ -191,14 +192,10 @@ int UnusedRegisters::request(byte_t req) {
 
 int UnusedRegisters::waitForRequest() {
     byte_t byte;
-    struct timespec req{}, rem{};
-    req.tv_sec = 1;
-    req.tv_nsec = 0; // 1s per cycle
-
 
     _sens->readRegister(_unused_reg_addr, 1, byte);
     while(memcmp(&byte, &_last_byte, 1) == 0) {
-        if(_transmission) nanosleep(&req, &rem); // wait 1sec
+        if(_transmission) AttackHelper::waitS(1); // wait 1sec
 
         _sens->readRegister(_unused_reg_addr, 1, byte);
     }

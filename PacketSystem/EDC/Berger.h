@@ -1,8 +1,14 @@
-//
-// Created by pi on 11/21/17.
-//
+/**
+    SensIO
+    Berger.h
 
-#pragma once
+    Simple implementation of the Berger code.
+
+    @author Markus Feldbacher
+*/
+
+#ifndef SIDECHANNEL_BERGER_H
+#define SIDECHANNEL_BERGER_H
 
 #include <bitset>
 #include "EDC.h"
@@ -32,3 +38,5 @@ public:
 
     int calcOutputSize(unsigned int length) override;
 };
+
+#endif // SIDECHANNEL_BERGER_H

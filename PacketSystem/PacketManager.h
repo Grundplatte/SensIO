@@ -1,4 +1,14 @@
-#pragma once
+/**
+    SensIO
+    PacketManager.h
+
+    Handles sending and receiving of packets over a covert channel. The type of channel is defined by the attack.
+
+    @author Markus Feldbacher
+*/
+
+#ifndef SIDECHANNEL_PACKETMANAGER_H
+#define SIDECHANNEL_PACKETMANAGER_H
 
 #include <cstdio>
 #include <cstdlib>
@@ -107,3 +117,5 @@ private:
 
     int check(Packet packet, int sqn);
 };
+
+#endif // SIDECHANNEL_PACKETMANAGER_H

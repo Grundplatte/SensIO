@@ -1,3 +1,12 @@
+/**
+    SensIO
+    main_send.cpp
+
+    Main function for the sender.
+
+    @author Markus Feldbacher
+*/
+
 #include <iostream>
 #include <bitset>
 #include "spdlog/spdlog.h"
@@ -7,16 +16,6 @@
 #include <sys/mman.h>
 
 namespace spd = spdlog;
-
-enum State {
-    WAIT_FOR_SQN,
-    CHECK_FOR_SQN,
-    RECHECK_FOR_SQN,
-    DECODE_SQN,
-    SEND_PACKET,
-    STOP,
-    ERROR
-};
 
 int main(int argc, char *argv[]) {
     std::shared_ptr<spd::logger> log;

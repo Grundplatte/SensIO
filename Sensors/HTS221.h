@@ -1,6 +1,12 @@
-//
-// Created by Markus Feldbacher on 12.04.18.
-//
+/**
+    SensIO
+    HTS221.h
+
+    Implementation of the sensor layer for the HTS221 sensor.
+
+    @todo Address translation; wip
+    @author Markus Feldbacher
+*/
 
 #ifndef SIDECHANNEL_HTS221_H
 #define SIDECHANNEL_HTS221_H

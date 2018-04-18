@@ -1,3 +1,12 @@
+/**
+    SensIO
+    PacketManager.cpp
+
+    Handles sending and receiving of packets over a covert channel. The type of channel is defined by the attack.
+
+    @author Markus Feldbacher
+*/
+
 #include <cmath>
 #include <utility>
 #include <sstream>

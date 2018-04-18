@@ -1,8 +1,14 @@
-//
-// Created by pi on 11/21/17.
-//
+/**
+    SensIO
+    Hadamard.cpp
 
-#pragma once
+    Simple implementation of the Hadamard code for one, two and three bit inputs.
+
+    @author Markus Feldbacher
+*/
+
+#ifndef SIDECHANNEL_EDC_H
+#define SIDECHANNEL_EDC_H
 
 #include "../../spdlog/spdlog.h"
 #include "../../Defines.h"
@@ -39,3 +45,5 @@ public:
 protected:
     std::shared_ptr<spd::logger> _log;
 };
+
+#endif // SIDECHANNEL_EDC_H

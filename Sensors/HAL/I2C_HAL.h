@@ -1,4 +1,15 @@
-#pragma once
+/**
+    SensIO
+    I2C_HAL.h
+
+    Implementation of I2C HAL. This was tested on a raspberry pi, which has two I2C busses. The bus can be
+    changed by altering the I2C_INTERFACE definition.
+
+    @author Markus Feldbacher
+*/
+
+#ifndef SIDECHANNEL_I2C_HAL_H
+#define SIDECHANNEL_I2C_HAL_H
 
 #include <cstdio>
 #include <cstdlib>
@@ -15,6 +26,8 @@
 #include "HAL.h"
 
 #define I2C_INTERFACE "/dev/i2c-1"
+//#define I2C_INTERFACE "/dev/i2c-0"
+
 #define MAX_READ_LEN 4
 #define MAX_WRITE_LEN 2
 
@@ -32,3 +45,5 @@ public:
 private:
     int _i2c;
 };
+
+#endif //SIDECHANNEL_I2C_HAL_H

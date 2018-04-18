@@ -1,6 +1,11 @@
-//
-// Created by Markus Feldbacher on 04.01.18.
-//
+/**
+    SensIO
+    PacketFactory.cpp
+
+    A Factory used to generate packets from data (bytes).
+
+    @author Markus Feldbacher
+*/
 
 #include "PacketFactory.h"
 #include "../spdlog/spdlog.h"

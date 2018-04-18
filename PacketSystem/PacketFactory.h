@@ -1,6 +1,11 @@
-//
-// Created by Markus Feldbacher on 04.01.18.
-//
+/**
+    SensIO
+    PacketFactory.h
+
+    A Factory used to generate packets from data (bytes).
+
+    @author Markus Feldbacher
+*/
 
 #ifndef SIDECHANNEL_PACKETFACTORY_H
 #define SIDECHANNEL_PACKETFACTORY_H

@@ -1,6 +1,12 @@
-//
-// Created by Markus Feldbacher on 16.03.18.
-//
+/**
+    SensIO
+    LPS25H.cpp
+
+    Implementation of the sensor layer for the LPS25H.
+
+    @todo Address translation; wip
+    @author Markus Feldbacher
+*/
 
 #include "LPS25H.h"
 

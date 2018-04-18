@@ -1,6 +1,12 @@
-//
-// Created by Markus Feldbacher on 16.03.18.
-//
+/**
+    SensIO
+    LPS25H.h
+
+    Implementation of the sensor layer for the LPS25H.
+
+    @todo Address translation; wip
+    @author Markus Feldbacher
+*/
 
 #ifndef SIDECHANNEL_LPS25H_H
 #define SIDECHANNEL_LPS25H_H

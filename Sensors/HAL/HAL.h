@@ -1,4 +1,14 @@
-#pragma once
+/**
+    SensIO
+    HAL.h
+
+    Definition of the required functions for the hardware abstraction layer.
+
+    @author Markus Feldbacher
+*/
+
+#ifndef SIDECHANNEL_HAL_H
+#define SIDECHANNEL_HAL_H
 
 #include "../../Defines.h"
 
@@ -30,3 +40,5 @@ public:
      **/
     //virtual int getBusType() = 0;
 };
+
+#endif // SIDECHANNEL_HAL_H

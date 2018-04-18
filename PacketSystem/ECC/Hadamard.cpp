@@ -1,6 +1,11 @@
-//
-// Created by pi on 11/21/17.
-//
+/**
+    SensIO
+    Hadamard.cpp
+
+    Simple implementation of the Hadamard code for one, two and three bit inputs.
+
+    @author Markus Feldbacher
+*/
 
 #include "Hadamard.h"
 
@@ -8,8 +13,6 @@ Hadamard::Hadamard() {
     std::shared_ptr<spdlog::logger> log = spd::get("Had");
     _log = log ? log : spd::stdout_color_mt("Had");
 }
-
-Hadamard::~Hadamard() = default;
 
 /*
  * Hadamard Code

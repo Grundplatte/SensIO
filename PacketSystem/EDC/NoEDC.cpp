@@ -1,6 +1,11 @@
-//
-// Created by pi on 11/22/17.
-//
+/**
+    SensIO
+    NoEDC.cpp
+
+    Dummy class used to disable the EDC feature.
+
+    @author Markus Feldbacher
+*/
 
 #include <cstring>
 #include "NoEDC.h"

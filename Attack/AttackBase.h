@@ -1,6 +1,11 @@
-//
-// Created by Markus Feldbacher on 11.04.18.
-//
+/**
+    SensIO
+    AttackBase.h
+
+    Defines classes that attacks need to implement.
+
+    @author Markus Feldbacher
+*/
 
 #ifndef SIDECHANNEL_ATTACKBASE_H
 #define SIDECHANNEL_ATTACKBASE_H
@@ -11,10 +16,40 @@
 class AttackBase {
 
 public:
+    /**
+     *
+     * @param packet
+     * @return
+     */
     virtual int send(Packet packet) = 0;
+
+    /**
+     *
+     * @param packet
+     * @param scale
+     * @return
+     */
     virtual int receive(Packet &packet, int scale) = 0;
+
+    /**
+     *
+     * @param req
+     * @return
+     */
     virtual int request(byte_t req) = 0;
+
+    /**
+     *
+     * @return
+     */
     virtual int waitForRequest() = 0;
+
+
+    /**
+     *
+     * @param cycles
+     * @return
+     */
     virtual int wait(int cycles) = 0;
 
 protected:

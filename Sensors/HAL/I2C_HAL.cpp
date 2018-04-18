@@ -1,3 +1,13 @@
+/**
+    SensIO
+    I2C_HAL.cpp
+
+    Implementation of I2C HAL. This was tested on a raspberry pi, which has two I2C busses. The bus can be
+    changed by altering the I2C_INTERFACE definition.
+
+    @author Markus Feldbacher
+*/
+
 #include "I2C_HAL.h"
 
 /*

@@ -1,20 +1,18 @@
+/**
+    SensIO
+    main_receive.cpp
+
+    Main function for the receiver.
+
+    @author Markus Feldbacher
+*/
+
 #include <iostream>
 #include "spdlog/spdlog.h"
 #include "PacketSystem/PacketManager.h"
 #include "TestBed.h"
 
-typedef uint8_t byte_t;
-
 namespace spd = spdlog;
-
-enum State {
-    IDLE,
-    REQUEST,
-    RECEIVE,
-    RERECEIVE,
-    STOP,
-    ERROR
-};
 
 int main(int argc, char *argv[]) {
 
