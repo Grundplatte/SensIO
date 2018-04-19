@@ -26,6 +26,5 @@ int ReadFlags::waitForRequest() {
     return 0;
 }
 
-int ReadFlags::wait(int cycles) {
-    return 0;
+void ReadFlags::wait(int cycles) {
 }

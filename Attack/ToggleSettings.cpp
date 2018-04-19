@@ -36,45 +36,30 @@ ToggleSettings::ToggleSettings(std::shared_ptr<EDC> edc, std::shared_ptr<SensorB
 
     _setting_reg_addr = reg.at(0);
 
-    // isActive not needed
-    _sens->readRegister(_setting_reg_addr, 1, _ref_value);
-    _log->trace("Initial state: {0:x}", _ref_value);
-    if(_ref_value != (_ref_value & 0xFC)){
-        _ref_value &= 0xFC;
-        _sens->writeRegister(_setting_reg_addr, 1, _ref_value);
+    byte_t ref_value;
+    _sens->readRegister(_setting_reg_addr, 1, ref_value);
+    _log->trace("Initial state: {0:x}", ref_value);
+    if(ref_value != (ref_value & RESET_MASK)){
+        ref_value &= 0xFC;
+        _sens->writeRegister(_setting_reg_addr, 1, ref_value);
     }
-
-    _last_bit = 0;
 }
 
 int ToggleSettings::send(Packet packet) {
-    unsigned char data;
-    data = _ref_value;
+    byte_t data;
+    _sens->readRegister(_setting_reg_addr, 1, data);
 
-    for(int i=0; i<packet.getSize(); i++) {
+    data &= RESET_MASK;
+
+    for(int i=0; i<packet.size(); i++) {
         if (packet[i] != 0) {
-            data |= 0x01;
+            data |= DATA_MASK;
         }
 
-        // senderflag
-        if (TestBed::TYPE) data |= 0x02;
+        write(data);
+        waitForAck();
 
-        _log->trace("Sent bit {0:x} ({1:x})", data & 0x01, data & 0x02);
-        _sens->writeRegister(_setting_reg_addr, 1, data);
-        _last_bit = !_last_bit;
-
-        // get ack
-        bool new_bit;
-        do {
-            _sens->readRegister(_setting_reg_addr, 1, data);
-
-            new_bit = (bool) (data & 0x02);
-
-        } while (new_bit == _last_bit);
-
-        // new data available
-        _last_bit = new_bit;
-        _log->trace("Received ACK ({0:x})", data & 0x02);
+        data &= RESET_MASK;
     }
     return 0;
 }
@@ -89,33 +74,10 @@ int ToggleSettings::receive(Packet &packet, int scale) {
     // clean up
     std::vector<bit_t> tmp;
     for (int i = 0; i < packet_bitsize; i++) {
-        //bit = _sens->readBit(i, long_timeout ? 3 : 2);
+        byte_t data;
 
-        unsigned char data;
-        unsigned char ack;
-        bool new_bit;
-
-        do {
-            _sens->readRegister(_setting_reg_addr, 1, data);
-
-            new_bit = (bool) (data & 0x02);
-
-        } while(new_bit == _last_bit);
-
-        // new data available
-        _last_bit = new_bit;
-        _log->trace("Received bit {0:x} ({1:x})", data & 0x01, data & 0x02);
-
-        // write ack
-        ack = _ref_value;
-        if(!_last_bit){
-            ack |= 0x02;
-        }
-        _sens->writeRegister(_setting_reg_addr, 1, ack);
-        _last_bit = !_last_bit;
-        _log->trace("Sent ACK ({0:x})", ack & 0x02);
-
-        //return data[0] & 0x01;
+        read(data);
+        ack(data);
 
         if (data) {
             if (tmp.empty()) {
@@ -142,36 +104,20 @@ int ToggleSettings::request(byte_t req) {
         return -1;
     }
 
+    byte_t data;
+    _sens->readRegister(_setting_reg_addr, 1, data);
+
     for (int i = 0; i < had_bitsize; i++) {
         bit_t bit = (bit_t) (req & (1 << (i % 8)));
-        //_sens->sendBit((bit_t) (sqn_had & (1 << (i % 8))));
-        unsigned char data;
-        data = _ref_value;
 
         if(bit != 0){
             data |= 0x01;
         }
 
-        if(!_last_bit){
-            data |= 0x02;
-        }
+        write(data);
+        waitForAck();
 
-        _log->trace("Sent bit {0:x} ({1:x})", data & 0x01, data & 0x02);
-        _sens->writeRegister(_setting_reg_addr, 1, data);
-        _last_bit = !_last_bit;
-
-        // get ack
-        bool new_bit;
-        do {
-            _sens->readRegister(_setting_reg_addr, 1, data);
-
-            new_bit = (bool) (data & 0x02);
-
-        } while(new_bit == _last_bit);
-
-        // new data available
-        _last_bit = new_bit;
-        _log->trace("Received ACK ({0:x})", data & 0x02);
+        data &= RESET_MASK;
     }
     return 0;
 }
@@ -183,33 +129,12 @@ int ToggleSettings::waitForRequest() {
     int had_bitsize = ecc.getEncodedSize(P_SQN_BITS);
 
     for (int i = 0; i < had_bitsize; i++) {
-        //bit = _sens->readBit(i, long_timeout ? 3 : 2);
+        byte_t data;
 
-        unsigned char data;
-        unsigned char ack;
-        bool new_bit;
+        read(data);
+        ack(data);
 
-        do {
-            _sens->readRegister(_setting_reg_addr, 1, data);
-
-            new_bit = (bool) (data & 0x02);
-
-        } while(new_bit == _last_bit);
-
-        // new data available
-        _last_bit = new_bit;
-        _log->trace("Received bit {0:x} ({1:x})", data & 0x01, data & 0x02);
-
-        // write ack
-        ack = _ref_value;
-        if(!_last_bit){
-            ack |= 0x02;
-        }
-        _sens->writeRegister(_setting_reg_addr, 1, ack);
-        _last_bit = !_last_bit;
-        _log->trace("Sent ACK ({0:x})", ack & 0x02);
-
-        if (data) {
+        if (data & DATA_MASK) {
             byte |= (1 << i);
         }
     }
@@ -218,6 +143,51 @@ int ToggleSettings::waitForRequest() {
     return byte;
 }
 
-int ToggleSettings::wait(int cycles) {
+void ToggleSettings::wait(int cycles) {
+    long ms = _sens->getCycleTime();
+    AttackHelper::waitMs(ms * cycles);
+}
+
+
+/////// PRIVATE ///////
+
+int ToggleSettings::write(byte_t &data) {
+    data &= ~FLAG_MASK;
+
+    _last_bit = !_last_bit;
+
+    data = _last_bit ? data | FLAG_MASK : data;
+
+    _sens->writeRegister(_setting_reg_addr, 1, data);
+    _log->trace("Sent bit {0:x} ({1:x})", data & DATA_MASK, data & FLAG_MASK);
+    return 0;
+}
+
+
+
+int ToggleSettings::read(byte_t &data) {
+    do {
+        _sens->readRegister(_setting_reg_addr, 1, data);
+        // TODO: timeout
+    } while((bool)(data & FLAG_MASK) == _last_bit);
+
+    _log->trace("Received bit {0:x} ({1:x})", data & DATA_MASK, data & FLAG_MASK);
+
+    _last_bit = !_last_bit;
+    return 0;
+}
+
+int ToggleSettings::waitForAck() {
+    byte_t data;
+    read(data);
+    _log->trace("Received ACK ({0:x})", data & FLAG_MASK);
+
+    return 0;
+}
+
+int ToggleSettings::ack(byte_t &data) {
+    write(data);
+    _log->trace("Sent ACK ({0:x})", data & FLAG_MASK);
+
     return 0;
 }

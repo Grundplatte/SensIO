@@ -23,7 +23,7 @@
 
 namespace spd = spdlog;
 
-int TestBed::TYPE = -1;
+bool TestBed::TYPE = -1; // dummy
 
 void TestBed::setRequestECC(int type) {
     switch (type) {
@@ -144,7 +144,7 @@ int TestBed::runTest(bool send) {
     _pf = std::unique_ptr<PacketFactory>(new PacketFactory(_packetEDC));
 
 
-    TYPE = send;
+    TestBed::TYPE = send;
 
     // run tests
     if (send)

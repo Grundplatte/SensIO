@@ -24,7 +24,7 @@ public:
 
     int waitForRequest() override;
 
-    int wait(int cycles) override;
+    void wait(int cycles) override;
 };
 
 

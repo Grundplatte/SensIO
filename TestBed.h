@@ -20,7 +20,7 @@
 
 class TestBed {
 public:
-    static int TYPE;
+    static bool TYPE;
     static const int ECC_HADAMARD = 1;
 
     static const int EDC_NOEDC = 0;
@@ -28,10 +28,6 @@ public:
 
     static const int HAL_I2C = 0;
     static const int HAL_SPI = 1;
-
-    static const int SENSOR_HTS221_FLAGS = 0;
-    static const int SENSOR_LPS25H_UNUSED = 1;
-    static const int SENSOR_LPS25H_TOGGLE = 2;
 
     static const int SENSOR_LPS25H = 0;
     static const int SENSOR_HTS221 = 1;

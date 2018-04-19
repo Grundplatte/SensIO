@@ -57,7 +57,7 @@ int main(int argc, char *argv[]) {
     testBed.setPacketEDC(TestBed::EDC_BERGER);
     testBed.setHAL(TestBed::HAL_I2C);
     testBed.setSensor(TestBed::SENSOR_LPS25H);
-    testBed.setAttack(TestBed::ATTACK_UNUSEDREG);
+    testBed.setAttack(TestBed::ATTACK_TOGGLESET);
     testBed.setTestBuffer(filecontent, filesize);
 
     testBed.runTest(true);

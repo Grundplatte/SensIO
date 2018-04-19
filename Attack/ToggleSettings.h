@@ -32,14 +32,22 @@ public:
 
     int waitForRequest() override;
 
-    int wait(int cycles) override;
+    void wait(int cycles) override;
 
 private:
-    unsigned char _ref_value = 0;
-    bool _last_bit = 0;
+    bool  _last_bit = false;
     int _setting_reg_addr;
 
-    const int MAX_RETRYS = 3;
+    const int MAX_RETRYS = 0;
+
+    const byte_t DATA_MASK = 0x01;
+    const byte_t FLAG_MASK = 0x02;
+    const byte_t RESET_MASK = 0xFC;
+
+    int write(byte_t &data);
+    int read(byte_t &data);
+    int waitForAck();
+    int ack(byte_t &data);
 };
 
 

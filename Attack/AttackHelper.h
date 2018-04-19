@@ -18,14 +18,14 @@ public:
      * @param sec Number of seconds to wait.
      * @return
      */
-    static int waitS(int sec);
+    static void waitS(int sec);
 
     /**
      * Wait for a specified number of milliseconds.
      * @param ms Number of milliseconds to wait
      * @return
      */
-    static int waitMs(int ms);
+    static void waitMs(long ms);
 };
 
 

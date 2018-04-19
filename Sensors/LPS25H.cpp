@@ -155,5 +155,5 @@ std::vector<int> LPS25H::getSettingRegisters() {
 
     registers.push_back(LPS25H_REF_P_XL);
 
-    return std::vector<int>();
+    return registers;
 }

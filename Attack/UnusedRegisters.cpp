@@ -206,7 +206,4 @@ int UnusedRegisters::waitForRequest() {
     return byte; //FIXME: conversion
 }
 
-int UnusedRegisters::wait(int cycles) {
-    // not needed
-    return 0;
-}
+void UnusedRegisters::wait(int cycles) {}

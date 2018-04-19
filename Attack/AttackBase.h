@@ -50,7 +50,7 @@ public:
      * @param cycles
      * @return
      */
-    virtual int wait(int cycles) = 0;
+    virtual void wait(int cycles) = 0;
 
 protected:
     std::shared_ptr<EDC> _edc;
