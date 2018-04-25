@@ -12,6 +12,8 @@
 #include "spdlog/spdlog.h"
 #include "PacketSystem/PacketManager.h"
 #include "TestBed.h"
+#include "Sensors/HTS221.h"
+#include "Sensors/HAL/I2C_HAL.h"
 #include <fstream>
 #include <sys/mman.h>
 
@@ -56,8 +58,8 @@ int main(int argc, char *argv[]) {
     testBed.setRequestECC(TestBed::ECC_HADAMARD);
     testBed.setPacketEDC(TestBed::EDC_BERGER);
     testBed.setHAL(TestBed::HAL_I2C);
-    testBed.setSensor(TestBed::SENSOR_LPS25H);
-    testBed.setAttack(TestBed::ATTACK_TOGGLESET);
+    testBed.setSensor(TestBed::SENSOR_HTS221);
+    testBed.setAttack(TestBed::ATTACK_READFLAGS);
     testBed.setTestBuffer(filecontent, filesize);
 
     testBed.runTest(true);

@@ -116,7 +116,7 @@ int UnusedRegisters::send(Packet packet) {
     return 0;
 }
 
-int UnusedRegisters::receive(Packet &packet, int scale) {
+int UnusedRegisters::receive(Packet &packet, int scale, bool re_receive) {
     // packet size for normal packets
     int packet_bitsize =
             1 + P_DATA_BITS[scale] + P_SQN_BITS + _edc->calcOutputSize(P_DATA_BITS[scale] + P_SQN_BITS + 1);
@@ -190,7 +190,7 @@ int UnusedRegisters::request(byte_t req) {
     return 0;
 }
 
-int UnusedRegisters::waitForRequest() {
+int UnusedRegisters::waitForRequest(byte_t &sqn_had, bool re_receive, bool initial) {
     byte_t byte;
 
     _sens->readRegister(_unused_reg_addr, 1, byte);

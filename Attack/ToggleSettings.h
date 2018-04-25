@@ -26,11 +26,11 @@ public:
 
     int send(Packet packet) override;
 
-    int receive(Packet &packet, int scale) override;
+    int receive(Packet &packet, int scale, bool re_receive) override;
 
     int request(byte_t req) override;
 
-    int waitForRequest() override;
+    int waitForRequest(byte_t &sqn_had, bool re_receive, bool initial) override;
 
     void wait(int cycles) override;
 

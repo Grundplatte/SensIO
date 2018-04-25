@@ -64,7 +64,7 @@ int ToggleSettings::send(Packet packet) {
     return 0;
 }
 
-int ToggleSettings::receive(Packet &packet, int scale) {
+int ToggleSettings::receive(Packet &packet, int scale, bool re_receive) {
 
     // packet size for normal packets
     size_t packet_bitsize =
@@ -122,7 +122,7 @@ int ToggleSettings::request(byte_t req) {
     return 0;
 }
 
-int ToggleSettings::waitForRequest() {
+int ToggleSettings::waitForRequest(byte_t &sqn_had, bool re_receive, bool initial) {
     byte_t byte = 0x00;
 
     Hadamard ecc;

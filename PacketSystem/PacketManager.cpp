@@ -30,10 +30,10 @@ PacketManager::PacketManager(std::shared_ptr<ECC> ecc, std::shared_ptr<EDC> edc,
 ***************************/
 
 
-int PacketManager::validateRequest(byte_t *sqn_had) {
+int PacketManager::validateRequest(byte_t &sqn_had) {
     size_t had_length = (size_t) _ecc->getEncodedSize(P_SQN_BITS);
 
-    return _ecc->check(sqn_had, had_length);
+    return _ecc->check(&sqn_had, had_length);
 }
 
 int PacketManager::unpack(std::vector<Packet> packets, byte_t *output, int output_len) {
@@ -213,16 +213,16 @@ int PacketManager::receiveBits(Packet &packet, int sqn, int scale, int long_time
  * BYTE BASED PRIVATE FUNCTIONS
 ***************************/
 
-int PacketManager::waitForRequest(byte_t *sqn_had) {
-    //TODO: support for multiple bytes?
-
-    *sqn_had = (byte_t) _attack->waitForRequest();
+int PacketManager::waitForRequest(byte_t &sqn_had) {
+    _attack->waitForRequest(sqn_had, false, true);
 
     return 0;
 }
 
-int PacketManager::checkForRequest(byte_t *sqn_had, bool long_timeout) {
-    return waitForRequest(sqn_had);
+int PacketManager::checkForRequest(byte_t &sqn_had, bool re_receive) {
+    _attack->waitForRequest(sqn_had, re_receive, false);
+
+    return 0;
 }
 
 int PacketManager::request(int sqn) {
@@ -239,7 +239,6 @@ int PacketManager::request(int sqn) {
         return -1;
     }
 
-    //_sens->readByte();
     _attack->request(sqn_had);
 
     //TODO: error handling
@@ -259,7 +258,7 @@ int PacketManager::send(Packet packet) {
 
 int PacketManager::receive(Packet &packet, int sqn, int scale, int long_timeout) {
 
-    _attack->receive(packet, scale);
+    _attack->receive(packet, scale, long_timeout);
 
     // debug log
     packet.printContents();

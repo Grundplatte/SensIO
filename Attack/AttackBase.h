@@ -10,6 +10,11 @@
 #ifndef SIDECHANNEL_ATTACKBASE_H
 #define SIDECHANNEL_ATTACKBASE_H
 
+#define TIMEOUT_SHORT 1
+#define TIMEOUT_MID 2
+#define TIMEOUT_LONG 3
+#define TIMEOUT_INFTY 4
+
 #include "../PacketSystem/Packet.h"
 #include "../Sensors/SensorBase.h"
 
@@ -29,7 +34,7 @@ public:
      * @param scale
      * @return
      */
-    virtual int receive(Packet &packet, int scale) = 0;
+    virtual int receive(Packet &packet, int scale, bool re_receive) = 0;
 
     /**
      *
@@ -42,7 +47,7 @@ public:
      *
      * @return
      */
-    virtual int waitForRequest() = 0;
+    virtual int waitForRequest(byte_t &sqn_had, bool re_receive, bool initial) = 0;
 
 
     /**

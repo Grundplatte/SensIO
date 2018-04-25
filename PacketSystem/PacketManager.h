@@ -40,14 +40,14 @@ public:
      * @param sqn_had: Hadamard encoded sequence number
      * @return: return 0 on success, -2 on timeout while receiving
      **/
-    int waitForRequest(byte_t *sqn_had);
+    int waitForRequest(byte_t &sqn_had);
 
     /**
      * Check if someone requests a packet
      * @param sqn_had: Hadamard encoded sequence number
      * @return: return 0 on success, -1 on initial timeout, -2 on timeout while receiving
      **/
-    int checkForRequest(byte_t *sqn_had, bool long_timeout);
+    int checkForRequest(byte_t &sqn_had, bool re_receive);
 
     /**
      * Request a packet using the sequence number sqn
@@ -61,7 +61,7 @@ public:
      * @param sqn: sequence number
      * @return: number of bits in sqn_had on success, -1 on error
      **/
-    int validateRequest(byte_t *sqn_had);
+    int validateRequest(byte_t &sqn_had);
 
     /**
      * Send a packet over the covert channel

@@ -17,7 +17,6 @@ LPS25H::LPS25H(std::shared_ptr<HAL> hal) {
 
     // init register size map with registers >1byte
     registerSizeMap.insert( std::pair<int, int>(LPS25H_REF_P_XL, 3));
-    registerSizeMap.insert( std::pair<int, int>(LPS25H_CTRL_REG_1, 4));
     registerSizeMap.insert( std::pair<int, int>(LPS25H_PRESS_OUT_XL, 3));
     registerSizeMap.insert( std::pair<int, int>(LPS25H_TEMP_OUT_L, 2));
     registerSizeMap.insert( std::pair<int, int>(LPS25H_THS_P_L, 2));
@@ -86,8 +85,8 @@ std::vector<int> LPS25H::getResultRegisters() {
     std::vector<int> resultRegisters;
 
     // TODO: check if reading the first register is sufficient
-    resultRegisters.push_back(LPS25H_PRESS_OUT_H); // datasheet specifies high registers must be read to reset flag
-    resultRegisters.push_back(LPS25H_TEMP_OUT_H);
+    resultRegisters.push_back(LPS25H_TEMP_OUT_H); // datasheet specifies high registers must be read to reset flag
+    resultRegisters.push_back(LPS25H_PRESS_OUT_H);
 
     return resultRegisters;
 }

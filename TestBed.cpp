@@ -14,12 +14,11 @@
 #include "PacketSystem/EDC/Berger.h"
 #include "Sensors/HAL/SPI_HAL.h"
 #include "Sensors/HAL/I2C_HAL.h"
-#include "Sensors/HTS221Flags.h"
-#include "Sensors/LPS25HUnused.h"
-#include "Sensors/LPS25HSettings.h"
+#include "Sensors/HTS221.h"
 #include "Sensors/LPS25H.h"
 #include "Attack/UnusedRegisters.h"
 #include "Attack/ToggleSettings.h"
+#include "Attack/ReadFlags.h"
 
 namespace spd = spdlog;
 
@@ -80,7 +79,7 @@ void TestBed::setSensor(int sensorType) {
             _log->debug("Sensor set to: LPS25H");
             break;
         case SENSOR_HTS221:
-            //_sensor = std::shared_ptr<SensorBase>(new LPS25HUnused(_hal));
+            _sensor = std::shared_ptr<SensorBase>(new HTS221(_hal));
             _log->debug("Sensor set to: HTS221");
             break;
         default:
@@ -96,7 +95,7 @@ void TestBed::setAttack(int attackType) {
 
     switch (attackType) {
         case ATTACK_READFLAGS:
-            //_attack = std::shared_ptr<AttackBase>(new UnusedRegisters(_packetEDC, _sensor));
+            _attack = std::shared_ptr<AttackBase>(new ReadFlags(_packetEDC, _sensor));
             _log->debug("Attack set to: Read Flags");
             break;
         case ATTACK_TOGGLESET:
@@ -177,6 +176,12 @@ int TestBed::runTestSend() {
     _log->trace("Setting up databuffer...");
     _pf->appendData(_buf, _buf_len);
 
+
+    Packet p = Packet(0,0,_packetEDC);
+    while(1) {
+        _pm->send(p);
+    }
+
     while (true) {
         switch (state) {
             case S_ERROR:
@@ -184,7 +189,7 @@ int TestBed::runTestSend() {
                 return -1;
 
             case S_WAIT_FOR_SQN:
-                result = _pm->waitForRequest(&sqn_had);
+                result = _pm->waitForRequest(sqn_had);
 
                 if (result == STATUS_OK){
                     state = S_DECODE_SQN;
@@ -194,7 +199,7 @@ int TestBed::runTestSend() {
                 break;
 
             case S_CHECK_FOR_SQN:
-                result = _pm->checkForRequest(&sqn_had, 0);
+                result = _pm->checkForRequest(sqn_had, 0);
 
                 if (result == TIMEOUT_WHILE_WAITING) {
                     error_count++;
@@ -214,7 +219,7 @@ int TestBed::runTestSend() {
                 break;
 
             case S_RECHECK_FOR_SQN:
-                result = _pm->checkForRequest(&sqn_had, 1);
+                result = _pm->checkForRequest(sqn_had, 1);
 
                 if (result == -2) {
                     state = S_SEND_PACKET;
@@ -226,7 +231,7 @@ int TestBed::runTestSend() {
                 break;
 
             case S_DECODE_SQN:
-                result = _pm->validateRequest(&sqn_had);
+                result = _pm->validateRequest(sqn_had);
 
                 if (result < 0) {
                     _log->warn("SQN not valid, check again.");
