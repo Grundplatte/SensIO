@@ -11,10 +11,11 @@
 #include "ReadFlags.h"
 #include "AttackHelper.h"
 #include "../PacketSystem/ECC/Hadamard.h"
+#include "../Sensors/HTS221.h"
 
 ReadFlags::ReadFlags(std::shared_ptr<EDC> edc, std::shared_ptr<SensorBase> sensor) {
-    std::shared_ptr<spdlog::logger> log = spd::get("Toggle Settings");
-    _log = log ? log : spd::stdout_color_mt("Toggle Settings");
+    std::shared_ptr<spdlog::logger> log = spd::get("Read Flags");
+    _log = log ? log : spd::stdout_color_mt("Read Flags");
 
     _sens = sensor;
     _edc = edc;
@@ -31,7 +32,9 @@ ReadFlags::ReadFlags(std::shared_ptr<EDC> edc, std::shared_ptr<SensorBase> senso
     _reg_F = regs[1];
 
     // check if sensor is running
-    _sens->isEnabled();
+    if(!_sens->isEnabled()){
+        _sens->enable(); // not very stealthy. attacker could wait until some normal user enables the sensor
+    }
 }
 
 int ReadFlags::send(Packet packet) {
@@ -40,18 +43,18 @@ int ReadFlags::send(Packet packet) {
 
     for(int i=0; i<packet.size(); i++) {
         waitForSensReady();
-        AttackHelper::waitMs(ms * 0.75); // try to don't interfere with other processes
+        AttackHelper::waitMs(ms * 0.5); // try to don't interfere with other processes
 
         // 1
         if (packet[i] != 0) {
             // read tmpout register with autoincrement address
             _log->trace("Send bit 1");
-            _sens->readRegister(_reg_T, 2, *data);
+            _sens->readRegister(_reg_T, 1, *data);
         } else {
             // 0
             // read humout
             _log->trace("Send bit 0");
-            _sens->readRegister(_reg_F, 2, *data);
+            _sens->readRegister(_reg_F, 1, *data);
         }
     }
 
@@ -95,18 +98,18 @@ int ReadFlags::receive(Packet &packet, int scale, bool re_receive) {
     return 0;
 }
 
+
 int ReadFlags::waitForSensReady()
 {
     std::vector<bool> status_flags;
 
     _log->trace("Waiting for sensor...");
 
-    for(int i=0; i<3; i++){
-        do {
-            status_flags = _sens->getResultFlags();
-            // TODO: if this takes more then a few cycles, check if sensor is active
-        } while(!status_flags[0] || !status_flags[1]);
-    }
+    do {
+        status_flags = _sens->getResultFlags();
+        // TODO: if this takes more then a few cycles, check if sensor is active
+    } while(!status_flags[0] || !status_flags[1]);
+
 
     _log->trace("Ready...");
     return 0;
@@ -124,23 +127,23 @@ int ReadFlags::request(byte_t req) {
 
     int ms = _sens->getCycleTime();
 
-    _log->info("Requesting packet: had sqn = 0x{0:2x}", req);
+    _log->debug("Requesting packet: had sqn = 0x{0:2x}", req);
 
     for (int i = 0; i < had_bitsize; i++) {
         bit_t bit = (bit_t) (req & (1 << (i % 8)));
         waitForSensReady();
-        AttackHelper::waitMs(ms * 0.75); // try to don't interfere with other processes
+        AttackHelper::waitMs(ms * 0.5); // try to don't interfere with other processes
 
         // 1
         if (bit != 0) {
             // read tmpout register with autoincrement address
             _log->trace("Send bit 1");
-            _sens->readRegister(_reg_T, 2, *data);
+            _sens->readRegister(_reg_T, 1, *data);
         } else {
             // 0
             // read humout
             _log->trace("Send bit 0");
-            _sens->readRegister(_reg_F, 2, *data);
+            _sens->readRegister(_reg_F, 1, *data);
         }
     }
 

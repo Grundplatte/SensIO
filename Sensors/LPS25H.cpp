@@ -28,7 +28,7 @@ bool LPS25H::isEnabled() {
 
     _hal->read(LPS25H_I2C_ADDR, LPS25H_CTRL_REG_1, 1, &data);
 
-    return (bool) (data & 0x80);
+    return (bool) (data & 0xC4) == 0xC4;
 }
 
 int LPS25H::enable() {
@@ -37,7 +37,7 @@ int LPS25H::enable() {
     _log->trace("Enabling Sensor.");
     _hal->read(LPS25H_I2C_ADDR, LPS25H_CTRL_REG_1, 1, &data);
 
-    data |= 0x80;
+    data |= 0xC4;
 
     _hal->write(LPS25H_I2C_ADDR, LPS25H_CTRL_REG_1, 1, &data);
 

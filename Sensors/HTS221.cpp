@@ -70,8 +70,6 @@ std::vector<bool> HTS221::getResultFlags() {
 
     _hal->read(HTS221_I2C_ADDR, HTS221_STATUS, 1, &data);
 
-    _log->warn("Status: 0x{0:2x}", data);
-
     flags.push_back(data & 0x01); // temp
     flags.push_back(data & 0x02); // hum
 
@@ -82,8 +80,8 @@ std::vector<int> HTS221::getResultRegisters() {
     std::vector<int> resultRegisters;
 
     // TODO: check if reading the first register is sufficient
-    resultRegisters.push_back(HTS221_TMP_OUT_L); // datasheet specifies high registers must be read to reset flag
-    resultRegisters.push_back(HTS221_HUM_OUT_L);
+    resultRegisters.push_back(HTS221_TMP_OUT_H); // datasheet specifies high registers must be read to reset flag
+    resultRegisters.push_back(HTS221_HUM_OUT_H);
 
     return resultRegisters;
 }

@@ -21,7 +21,7 @@ void AttackHelper::waitS(int sec) {
 void AttackHelper::waitMs(long ms) {
     struct timespec req{};
     req.tv_sec = ms / 1000;
-    req.tv_nsec = (ms % 1000) * 1000;
+    req.tv_nsec = (ms % 1000) * 1000000;
 
     nanosleep(&req, NULL);
 }

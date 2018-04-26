@@ -176,11 +176,11 @@ int TestBed::runTestSend() {
     _log->trace("Setting up databuffer...");
     _pf->appendData(_buf, _buf_len);
 
-
+    /* DEBUG
     Packet p = Packet(0,0,_packetEDC);
     while(1) {
         _pm->send(p);
-    }
+    }*/
 
     while (true) {
         switch (state) {

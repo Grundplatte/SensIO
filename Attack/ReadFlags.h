@@ -36,6 +36,8 @@ private:
 
     int waitForSensReady();
     int readBit(int delay);
+    int isSensReady(byte_t status);
+    int getStatus(byte_t *status);
 };
 
 
