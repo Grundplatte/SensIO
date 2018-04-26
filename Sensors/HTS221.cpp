@@ -70,7 +70,7 @@ std::vector<bool> HTS221::getResultFlags() {
 
     _hal->read(HTS221_I2C_ADDR, HTS221_STATUS, 1, &data);
 
-    _log->warn("Data: 0x{0:2x}", data);
+    _log->warn("Status: 0x{0:2x}", data);
 
     flags.push_back(data & 0x01); // temp
     flags.push_back(data & 0x02); // hum
@@ -113,6 +113,7 @@ int HTS221::readRegister(int registerAddress, int size, byte_t &data) {
         registerAddress += 0x80; // increment
     }
 
+    _log->trace("Reading {0} bytes from 0x{1:2x}", size, registerAddress);
     return _hal->read(HTS221_I2C_ADDR, registerAddress, size, &data);
 }
 
@@ -133,6 +134,6 @@ int HTS221::writeRegister(int registerAddress, int size, byte_t &data) {
         registerAddress += 0x80;
     }
 
-    _log->trace("Writing {0}bytes to 0x{1}.", size, registerAddress);
+    _log->trace("Writing {0} bytes to 0x{1:2x}.", size, registerAddress);
     return _hal->write(HTS221_I2C_ADDR, registerAddress, size, &data);
 }
